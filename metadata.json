@@ -1,0 +1,6 @@
+{
+  "name": "Stafflink Empleados",
+  "description": "AplicaciÃ³n para buscar empleados y asignarles responsables (UC-02), con interfaz accesible y filtros de bÃºsqueda.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
