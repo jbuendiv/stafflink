@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Box, Alert, Snackbar, Typography, Breadcrumbs, Link } from '@mui/material';
+import { Container, Box, Alert, Snackbar, Typography, Breadcrumbs, Link, Paper } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { EmployeeForm, useEmployees } from '@/features/manage-employee';
-import type { CreateEmployeeDTO } from '@/entities/employee/model/types';
+import type { CreateEmployeeDTO, UpdateEmployeeDTO } from '@/entities/employee/model/types';
 
 export const EmployeeCreatePage = () => {
   const navigate = useNavigate();
@@ -15,9 +15,9 @@ export const EmployeeCreatePage = () => {
 
   const { createEmployee } = useEmployees();
 
-  const handleSave = (data: CreateEmployeeDTO) => {
+  const handleSave = (data: CreateEmployeeDTO | UpdateEmployeeDTO) => {
     try {
-      createEmployee(data);
+      createEmployee(data as CreateEmployeeDTO);
       navigate('/employees', { 
         state: { 
           message: 'Empleado creado exitosamente', 
@@ -58,25 +58,23 @@ export const EmployeeCreatePage = () => {
         >
           Listado de usuarios
         </Link>
-        <Typography variant="body1" color="text.primary">
-          Crear Empleado
+        <Typography variant="h6" color="text.primary">
+          Nuevo Empleado
         </Typography>
       </Breadcrumbs>
 
-      <Typography
-        component="h1"
-        sx={{ fontSize: '2.5rem', fontWeight: 'bold', mb: 3 }}
-      >
-        Crear Empleado
-      </Typography>
-
-      <Box>
-        <EmployeeForm
-          employee={null}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
-      </Box>
+      <Paper sx={{ p: 4, borderRadius: 3, border: '1px solid #e5e7eb', boxShadow: 'none' }}>
+        <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
+          Crear Empleado
+        </Typography>
+        <Box sx={{ maxWidth: 600, mx: 'auto' }}>
+          <EmployeeForm
+            employee={null}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
+        </Box>
+      </Paper>
 
       <Snackbar
         open={snackbar.open}

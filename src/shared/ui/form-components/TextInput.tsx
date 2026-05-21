@@ -16,7 +16,9 @@ interface TextInputProps {
   name?: string;
   type?: string;
   fullWidth?: boolean;
+  placeholder?: string;
   inputRef?: RefObject<HTMLInputElement | null>;
+  disabled?: boolean;
 }
 
 /**
@@ -31,7 +33,9 @@ export const TextInput = ({
   name,
   type = "text",
   fullWidth = true,
+  placeholder,
   inputRef,
+  disabled = false,
 }: TextInputProps) => {
   const displayLabel = required ? `${label} *` : label;
 
@@ -45,10 +49,13 @@ export const TextInput = ({
       onChange={(e) => onChange(e.target.value)}
       error={!!error}
       helperText={error}
+      placeholder={placeholder}
+      disabled={disabled}
       slotProps={{
         formHelperText: {
           sx: ERROR_HELPER_TEXT_SX,
         },
+        inputLabel: type === "date" ? { shrink: true } : undefined,
       }}
       inputRef={inputRef}
     />

@@ -26,8 +26,6 @@ interface UseNavbarProps {
 const ROUTE_MAP: Record<string, string> = {
   dashboard: '/',
   employees: '/employees',
-  'employees-create': '/employees',
-  'employees-filter': '/search-employees',
   projects: '/projects',
   opportunities: '/opportunities',
   clients: '/clients',
@@ -50,9 +48,6 @@ export function useNavbar({ activePage }: UseNavbarProps) {
 
   // Estado: Elemento ancla para el menú desplegable de Area
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
-
-  // Estado: Elemento ancla para el menú desplegable de Empleados
-  const [employeesAnchorEl, setEmployeesAnchorEl] = useState<null | HTMLElement>(null)
 
   // Computed: Calcula la tab activa basándose en la ruta actual
   const activeTab = (() => {
@@ -77,27 +72,14 @@ export function useNavbar({ activePage }: UseNavbarProps) {
   // Computed: Verifica si el menú de área está abierto
   const isAreaMenuOpen = Boolean(anchorEl)
 
-  // Computed: Verifica si el menú de empleados está abierto
-  const isEmployeesMenuOpen = Boolean(employeesAnchorEl)
-
   // Handler: Abre el menú desplegable de Area
-  const handleAreaMenuOpen = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleAreaMenuOpen = (event: MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget)
   }
 
   // Handler: Cierra el menú desplegable de Area
   const handleAreaMenuClose = () => {
     setAnchorEl(null)
-  }
-
-  // Handler: Abre el menú desplegable de Empleados
-  const handleEmployeesMenuOpen = (event: MouseEvent<HTMLButtonElement>) => {
-    setEmployeesAnchorEl(event.currentTarget)
-  }
-
-  // Handler: Cierra el menú desplegable de Empleados
-  const handleEmployeesMenuClose = () => {
-    setEmployeesAnchorEl(null)
   }
 
   // Handler: Maneja el click en un item de navegación regular
@@ -117,30 +99,16 @@ export function useNavbar({ activePage }: UseNavbarProps) {
     handleAreaMenuClose()
   }
 
-  // Handler: Maneja el click en un item del menú desplegable de Empleados
-  const handleEmployeesItemClick = (value: string) => {
-    const route = ROUTE_MAP[value]
-    if (route) {
-      navigate(route)
-    }
-    handleEmployeesMenuClose()
-  }
-
   // Helper: Verifica si una tab está activa
   const isActiveTab = (value: string) => activeTab === value
 
   return {
     anchorEl,
-    employeesAnchorEl,
     isAreaMenuOpen,
-    isEmployeesMenuOpen,
     handleAreaMenuOpen,
     handleAreaMenuClose,
-    handleEmployeesMenuOpen,
-    handleEmployeesMenuClose,
     handleNavClick,
     handleAreaItemClick,
-    handleEmployeesItemClick,
     isActiveTab,
   }
 }

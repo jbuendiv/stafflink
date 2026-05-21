@@ -1,52 +1,41 @@
-/**
- * Servicio para operaciones con Proyecto
- */
-import type { Proyecto, ProyectoCreate, ProyectoUpdate } from '../model/types';
-import { proyectosMock } from '../model/proyecto-mock';
+import { Project } from '@/types';
+import { MOCK_PROJECTS } from '@/data/mockData';
 
-class ProyectoService {
-  private proyectos: Proyecto[] = [...proyectosMock];
+const STORAGE_KEY = 'stafflink_projects_v2';
 
-  async getAll(): Promise<Proyecto[]> {
-    return Promise.resolve([...this.proyectos]);
+export const proyectoService = {
+  getAll: (): Project[] => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_PROJECTS));
+    return MOCK_PROJECTS;
+  },
+  
+  getById: (id: string): Project | undefined => {
+    return proyectoService.getAll().find(p => p.id === id);
+  },
+  
+  create: (project: Project): Project => {
+    const projects = proyectoService.getAll();
+    const newProject = { ...project, id: `project-new-${Date.now()}` };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([newProject, ...projects]));
+    return newProject;
+  },
+  
+  update: (id: string, updates: Partial<Project>): Project => {
+    const projects = proyectoService.getAll();
+    const index = projects.findIndex(p => p.id === id);
+    if (index === -1) throw new Error('Proyecto no encontrado');
+    
+    projects[index] = { ...projects[index], ...updates };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
+    return projects[index];
+  },
+
+  delete: (id: string): void => {
+    const projects = proyectoService.getAll().filter(p => p.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
   }
-
-  async getById(id: string): Promise<Proyecto | undefined> {
-    return Promise.resolve(this.proyectos.find((p) => p.id === id));
-  }
-
-  async getByCliente(clienteId: string): Promise<Proyecto[]> {
-    return Promise.resolve(
-      this.proyectos.filter((p) => p.field_cliente === clienteId)
-    );
-  }
-
-  async create(proyecto: ProyectoCreate): Promise<Proyecto> {
-    const newProyecto: Proyecto = {
-      ...proyecto,
-      id: `proyecto-${Date.now()}`,
-    };
-    this.proyectos.push(newProyecto);
-    return Promise.resolve(newProyecto);
-  }
-
-  async update(id: string, updates: ProyectoUpdate): Promise<Proyecto | undefined> {
-    const index = this.proyectos.findIndex((p) => p.id === id);
-    if (index === -1) {
-      return Promise.resolve(undefined);
-    }
-    this.proyectos[index] = { ...this.proyectos[index], ...updates };
-    return Promise.resolve(this.proyectos[index]);
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const index = this.proyectos.findIndex((p) => p.id === id);
-    if (index === -1) {
-      return Promise.resolve(false);
-    }
-    this.proyectos.splice(index, 1);
-    return Promise.resolve(true);
-  }
-}
-
-export const proyectoService = new ProyectoService();
+};

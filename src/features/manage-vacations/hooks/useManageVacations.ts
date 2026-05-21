@@ -2,43 +2,22 @@
 // IMPORTS
 // ============================================================
 import { useState, useEffect, useCallback } from 'react';
-import type { VacationRequest } from '../../../types';
+import type { Vacation } from '../../../entities/vacaciones/model/types';
+import { vacacionesService } from '../../../entities/vacaciones/api/vacaciones-service';
 
-// ============================================================
-// HOOK
-// ============================================================
 export function useManageVacations() {
-  const [requests, setRequests] = useState<VacationRequest[]>([]);
+  const [requests, setRequests] = useState<Vacation[]>([]);
+  const [loading, setLoading] = useState(false);
 
-  // Load from local storage
-  const loadRequests = useCallback(() => {
-    const saved = localStorage.getItem('vacationRequests');
-    if (saved) {
-      try {
-        setRequests(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse vacation requests', e);
-      }
-    } else {
-      // Mock some data if nothing exists
-      const initial: VacationRequest[] = [
-        {
-          id: 'vreq-1',
-          employeeId: 'emp-2',
-          startDate: '2026-07-01',
-          endDate: '2026-07-15',
-          status: 'Pending'
-        },
-        {
-          id: 'vreq-2',
-          employeeId: 'emp-3',
-          startDate: '2026-08-10',
-          endDate: '2026-08-20',
-          status: 'Pending'
-        }
-      ];
-      localStorage.setItem('vacationRequests', JSON.stringify(initial));
-      setRequests(initial);
+  const loadRequests = useCallback(async () => {
+    setLoading(true);
+    try {
+      const allVacations = await vacacionesService.getAll();
+      setRequests(allVacations);
+    } catch (e) {
+      console.error('Failed to load vacation requests', e);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -46,22 +25,28 @@ export function useManageVacations() {
     loadRequests();
   }, [loadRequests]);
 
-  const updateRequestStatus = (id: string, newStatus: 'Approved' | 'Rejected') => {
-    const updatedRequests = requests.map(req => 
-      req.id === id ? { ...req, status: newStatus } : req
-    );
-    setRequests(updatedRequests);
-    localStorage.setItem('vacationRequests', JSON.stringify(updatedRequests));
-    
-    // Simulate complex business logic
-    if (newStatus === 'Approved') {
-      console.log(`[Capacity Process] Assignments recalculated for employee ${requests.find(r => r.id === id)?.employeeId}`);
+  const updateRequestStatus = async (id: string, newStatus: 'Approved' | 'Rejected') => {
+    try {
+      await vacacionesService.update(id, { field_estado: newStatus });
+      setRequests(current =>
+        current.map(req => (req.id === id ? { ...req, field_estado: newStatus } : req))
+      );
+      
+      if (newStatus === 'Approved') {
+        const req = requests.find(r => r.id === id);
+        if (req) {
+          console.log(`[Capacity Process] Assignments recalculated for employee ${req.field_solicitante}`);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to update vacation status', e);
     }
   };
 
   return {
     requests,
     updateRequestStatus,
-    refresh: loadRequests
+    refresh: loadRequests,
+    loading
   };
 }

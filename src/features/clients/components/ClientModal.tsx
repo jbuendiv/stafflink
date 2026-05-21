@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Client, ClientManager } from '../../../types';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
+
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -16,20 +10,35 @@ import FormControl from '@mui/material/FormControl';
 import Autocomplete from '@mui/material/Autocomplete';
 import Box from '@mui/material/Box';
 
+import { BaseModal } from '@/shared/ui/BaseModal';
+import { tokens } from '@/app/providers/styles/theme';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
+
 interface ClientModalProps {
   isOpen: boolean;
   onClose: () => void;
-  client: Client | null; // null means create mode
+  /** null → create mode */
+  client: Client | null;
   allManagers: ClientManager[];
   onSave: (client: Client) => void;
 }
 
-export function ClientModal({ isOpen, onClose, client, allManagers, onSave }: ClientModalProps) {
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function ClientModal({
+  isOpen,
+  onClose,
+  client,
+  allManagers,
+  onSave,
+}: ClientModalProps) {
   const [name, setName] = useState('');
   const [level, setLevel] = useState<number | ''>('');
   const [sector, setSector] = useState('');
   const [managerId, setManagerId] = useState('');
 
+  // ── Seed form ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (client) {
       setName(client.name);
@@ -44,102 +53,117 @@ export function ClientModal({ isOpen, onClose, client, allManagers, onSave }: Cl
     }
   }, [client, isOpen]);
 
-  const handleSave = () => {
-    if (!name.trim() || !level || !managerId) return;
+  // ── Save ──────────────────────────────────────────────────────────────────
+  const isValid = Boolean(name.trim() && level && managerId);
 
-    const selectedManager = allManagers.find(m => m.id === managerId);
+  const handleSave = () => {
+    if (!isValid) return;
+    const selectedManager = allManagers.find((m) => m.id === managerId);
     if (!selectedManager) return;
-    
-    const savedClient: Client = {
+
+    onSave({
       id: client ? client.id : `client-new-${Date.now()}`,
       name: name.trim(),
       level: level as number,
-      sector: sector,
+      sector,
       manager: selectedManager,
-    };
-    
-    onSave(savedClient);
+    });
     onClose();
   };
 
+  // ── Footer ────────────────────────────────────────────────────────────────
+  const actions = (
+    <>
+      <Button
+        variant="outlined"
+        color="inherit"
+        onClick={onClose}
+        sx={{ textTransform: 'none' }}
+      >
+        Cancelar
+      </Button>
+      <Button
+        variant="contained"
+        onClick={handleSave}
+        disabled={!isValid}
+        sx={{
+          textTransform: 'none',
+          boxShadow: 'none',
+          bgcolor: tokens.brand.main,
+          '&:hover': { bgcolor: tokens.brand.dark },
+        }}
+      >
+        {client ? 'Guardar Cambios' : 'Crear Cliente'}
+      </Button>
+    </>
+  );
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
-        <Typography variant="h6" component="span" sx={{ fontWeight: 'bold' }}>
-          {client ? 'Editar Cliente' : 'Nuevo Cliente'}
-        </Typography>
-        <IconButton aria-label="Cerrar modal" onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      
-      <DialogContent dividers>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-          <TextField
-            fullWidth
-            label="Nombre"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            size="small"
-          />
+    <BaseModal
+      open={isOpen}
+      onClose={onClose}
+      title={client ? 'Editar Cliente' : 'Nuevo Cliente'}
+      maxWidth="sm"
+      actions={actions}
+    >
+      <Box
+        component="form"
+        noValidate
+        aria-label={client ? 'Formulario editar cliente' : 'Formulario nuevo cliente'}
+        sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
+      >
+        <TextField
+          fullWidth
+          label="Nombre"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          size="small"
+        />
 
-          <FormControl fullWidth size="small" required>
-            <InputLabel id="modal-level-select-label">Nivel</InputLabel>
-            <Select
-              labelId="modal-level-select-label"
-              value={level}
-              label="Nivel"
-              onChange={(e) => setLevel(e.target.value as number)}
-            >
-              {[1, 2, 3].map(n => (
-                <MenuItem key={n} value={n}>{n}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+        <FormControl fullWidth size="small" required>
+          <InputLabel id="client-modal-level-label">Nivel</InputLabel>
+          <Select
+            labelId="client-modal-level-label"
+            value={level}
+            label="Nivel"
+            onChange={(e) => setLevel(e.target.value as number)}
+          >
+            {[1, 2, 3].map((n) => (
+              <MenuItem key={n} value={n}>
+                {n}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-          <TextField
-            fullWidth
-            label="Sector"
-            value={sector}
-            onChange={(e) => setSector(e.target.value)}
-            size="small"
-            placeholder="Ej. Tecnología, Finanzas..."
-          />
+        <TextField
+          fullWidth
+          label="Sector"
+          value={sector}
+          onChange={(e) => setSector(e.target.value)}
+          size="small"
+          placeholder="Ej. Tecnología, Finanzas…"
+        />
 
-          <Autocomplete
-            size="small"
-            fullWidth
-            options={allManagers}
-            getOptionLabel={(option) => option.name}
-            value={allManagers.find(m => m.id === managerId) || null}
-            onChange={(event, newValue) => { setManagerId(newValue?.id || ''); }}
-            renderInput={(params) => (
-              <TextField 
-                {...params} 
-                label="Cliente Manager" 
-                required 
-                placeholder="Buscar manager..."
-              />
-            )}
-          />
-        </Box>
-      </DialogContent>
-      
-      <DialogActions sx={{ px: 3, py: 2, bgcolor: 'grey.50' }}>
-        <Button onClick={onClose} color="inherit" variant="outlined" sx={{ textTransform: 'none' }}>
-          Cancelar
-        </Button>
-        <Button 
-          onClick={handleSave} 
-          color="primary" 
-          variant="contained" 
-          sx={{ textTransform: 'none', boxShadow: 'none' }}
-          disabled={!name.trim() || !level || !managerId}
-        >
-          Guardar Cambios
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <Autocomplete
+          size="small"
+          fullWidth
+          options={allManagers}
+          getOptionLabel={(o) => o.name}
+          value={allManagers.find((m) => m.id === managerId) ?? null}
+          onChange={(_, val) => setManagerId(val?.id ?? '')}
+          renderInput={(params) => (
+            <TextField
+              {...params}
+              label="Cliente Manager"
+              required
+              placeholder="Buscar manager…"
+            />
+          )}
+        />
+      </Box>
+    </BaseModal>
   );
 }

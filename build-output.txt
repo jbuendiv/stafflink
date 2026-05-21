@@ -1,0 +1,35 @@
+
+> stafflink-refactor@0.0.0 build
+> tsc -b && vite build
+
+src/features/manage-employee/hooks/useEmployeeForm.ts(166,56): error TS18048: 'emp.email' is possibly 'undefined'.
+src/features/manage-employee/hooks/useEmployeeForm.ts(167,30): error TS18048: 'employee.email' is possibly 'undefined'.
+src/features/manage-employee/ui/EmployeeForm.tsx(86,9): error TS2322: Type 'string[] | undefined' is not assignable to type 'string[]'.
+  Type 'undefined' is not assignable to type 'string[]'.
+src/features/manage-employee/ui/EmployeeForm.tsx(87,9): error TS2322: Type 'string[] | undefined' is not assignable to type 'string[]'.
+  Type 'undefined' is not assignable to type 'string[]'.
+src/features/manage-employee/ui/EmployeeImportDialog.tsx(82,61): error TS18048: 'e.email' is possibly 'undefined'.
+src/pages/employees/ui/EmployeeCreatePage.tsx(73,13): error TS2322: Type '(data: CreateEmployeeDTO) => void' is not assignable to type '(data: CreateEmployeeDTO | Partial<CreateEmployeeDTO>) => void'.
+  Types of parameters 'data' and 'data' are incompatible.
+    Type 'CreateEmployeeDTO | Partial<CreateEmployeeDTO>' is not assignable to type 'CreateEmployeeDTO'.
+      Type 'Partial<CreateEmployeeDTO>' is not assignable to type 'CreateEmployeeDTO'.
+        Type 'Partial<CreateEmployeeDTO>' is not assignable to type 'Omit<Employee, "id">'.
+          Types of property 'name' are incompatible.
+            Type 'string | undefined' is not assignable to type 'string'.
+              Type 'undefined' is not assignable to type 'string'.
+src/pages/employees/ui/EmployeeDetailPage.tsx(73,33): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/employees/ui/EmployeeDetailPage.tsx(74,43): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/employees/ui/EmployeeDetailPage.tsx(371,43): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/pages/employees/ui/EmployeeDetailPage.tsx(380,24): error TS18048: 'employee.field_responsables' is possibly 'undefined'.
+src/pages/employees/ui/EmployeeDetailPage.tsx(381,42): error TS18048: 'employee.field_responsables' is possibly 'undefined'.
+src/pages/employees/ui/EmployeeDetailPage.tsx(427,34): error TS2345: Argument of type 'string[] | undefined' is not assignable to parameter of type 'string[]'.
+  Type 'undefined' is not assignable to type 'string[]'.
+src/pages/projects/ui/ProjectDetailPage.tsx(50,52): error TS2304: Cannot find name 'Client'.
+src/pages/search-employees/ui/SearchEmployeesPage.tsx(21,8): error TS2741: Property 'onSearch' is missing in type '{ criteria: SearchCriteria; onCriteriaChange: (updates: Partial<SearchCriteria>) => void; onReset: () => void; startDate: Date | null; endDate: Date | null; onDateRangeChange: (start: Date | null, end: Date | null) => void; }' but required in type 'SearchEmployeesFormProps'.
+src/services/firebase.ts(1,31): error TS2307: Cannot find module 'firebase/app' or its corresponding type declarations.
+src/services/firebase.ts(2,25): error TS2307: Cannot find module 'firebase/auth' or its corresponding type declarations.
+src/services/firebase.ts(3,30): error TS2307: Cannot find module 'firebase/firestore' or its corresponding type declarations.
+src/services/firebase.ts(47,57): error TS7006: Parameter 'provider' implicitly has an 'any' type.

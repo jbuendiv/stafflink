@@ -1,22 +1,8 @@
-// ============================================================
-// IMPORTS
-// ============================================================
-import { useState, useEffect, type ReactElement } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  Box,
   Button,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Paper,
-  Chip,
-  IconButton,
   Typography,
-  Container,
   Snackbar,
   Alert,
   Dialog,
@@ -24,375 +10,189 @@ import {
   DialogContent,
   DialogContentText,
   DialogActions,
-  Avatar
 } from '@mui/material';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import type { Employee } from '../../../types';
-import { categorias, getOficinaNombre } from '../../../shared/mock/catalogs';
 import { useEmployees } from '../hooks/useEmployees';
 import { EmployeeImportDialog } from './EmployeeImportDialog';
+import { SearchEmployeesForm } from '@/features/search-employees/ui/SearchEmployeesForm';
+import { useEmployeeSearch } from '@/features/search-employees/hooks/useEmployeeSearch';
+import { PageContainer, PageHeader, ResultsCount, EmployeeTable } from '@/shared/ui';
 
-// ============================================================
-// CONSTANTS
-// ============================================================
-const employeesPerPage = 10;
+const EMPLOYEES_PER_PAGE = 10;
 
-// ============================================================
-// COMPONENT
-// ============================================================
 export const EmployeeList = () => {
-  // Estado para controlar la paginacióny el snackbar de mensajes
   const navigate = useNavigate();
-  // Obtener la navegación previa para mostrar mensajes de éxito/error después de crear/editar empleados
   const location = useLocation();
-  // Estado para controlar la página actual en la paginación
   const [currentPage, setCurrentPage] = useState(1);
-  
-  // Inicializar el estado del snackbar basado en la navegación previa
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+
   const [snackbar, setSnackbar] = useState({
     open: !!location.state?.message,
-    message: location.state?.message || '',
-    severity: (location.state?.severity || 'success') as 'success' | 'error' | 'warning'
+    message: (location.state?.message as string) || '',
+    severity: ((location.state?.severity as string) || 'success') as 'success' | 'error' | 'warning',
   });
 
-  // Limpiar el estado de ubicación después de montar para que al recargar la página
-  // o navegar hacia atrás/adelante no se vuelva a mostrar el mensaje.
   useEffect(() => {
     if (location.state?.message) {
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
-  
-  // Estado para el Dialog de confirmación de eliminación
-  const [deleteDialog, setDeleteDialog] = useState<{
-    open: boolean;
-    employee: Employee | null;
-  }>({
+
+  const [deleteDialog, setDeleteDialog] = useState<{ open: boolean; employee: Employee | null }>({
     open: false,
-    employee: null
+    employee: null,
   });
 
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  
-  const { employees, deleteEmployee, createEmployee, updateEmployee } = useEmployees();
-  // Obtener permisos del usuario actual para mostrar/ocultar acciones
+  const { deleteEmployee, createEmployee, updateEmployee } = useEmployees();
 
-  // Calcular el total de páginas y los empleados a mostrar en la página actual
-  const totalPages = Math.ceil(employees.length / employeesPerPage);
-  // Calcular los empleados a mostrar en la página actual
-  const startIndex = (currentPage - 1) * employeesPerPage;
-  // Si el número de empleados es menor que el índice de inicio, mostrar la última página
-  const paginatedEmployees = employees.slice(startIndex, startIndex + employeesPerPage);
+  const {
+    results,
+    criteria,
+    updateCriteria,
+    resetCriteria,
+    triggerSearch,
+    reloadEmployees,
+    isLoading,
+    startDate,
+    endDate,
+    setDateRange,
+  } = useEmployeeSearch();
 
-  const getStatusColor = (status: string) => {
-    return status === 'activo' ? 'success' : 'default';
-  };
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [results.length]);
 
-  const getCategoryName = (categoryId: string): string => {
-    return categorias.find(c => c.id === categoryId)?.nombre || categoryId;
-  };
+  const totalPages = Math.ceil(results.length / EMPLOYEES_PER_PAGE);
+  const startIndex = (currentPage - 1) * EMPLOYEES_PER_PAGE;
+  const paginatedResults = results.slice(startIndex, startIndex + EMPLOYEES_PER_PAGE);
 
-  const getManagerNames = (managerIds: string[]): ReactElement => {
-    if (!managerIds || managerIds.length === 0) return <>-</>;
-    
-    const names = managerIds
-      .map(id => {
-        const manager = employees.find(emp => emp.id === id);
-        return manager ? `${manager.name} ${manager.surname}` : id;
-      })
-      .filter(Boolean);
-    
-    if (names.length === 0) return <>-</>;
-    
-    return (
-      <>
-        {names.map((name, index) => (
-          <span key={index}>
-            {name}
-            {index < names.length - 1 && <br />}
-          </span>
-        ))}
-      </>
-    );
-  };
-
-  // Handlers para el Dialog de eliminación
-  const handleDeleteClick = (employee: Employee) => {
-    setDeleteDialog({ open: true, employee });
-  };
-
-  const handleDeleteCancel = () => {
-    setDeleteDialog({ open: false, employee: null });
-  };
+  const handleDeleteCancel = () => setDeleteDialog({ open: false, employee: null });
 
   const handleDeleteConfirm = () => {
     if (deleteDialog.employee) {
       const success = deleteEmployee(deleteDialog.employee.id);
-      
       if (success) {
         setSnackbar({
           open: true,
           message: `Empleado "${deleteDialog.employee.name} ${deleteDialog.employee.surname}" eliminado correctamente`,
-          severity: 'success'
-        });
-      } else {
-        setSnackbar({
-          open: true,
-          message: 'Error al eliminar el empleado',
-          severity: 'error'
+          severity: 'success',
         });
       }
-      
       setDeleteDialog({ open: false, employee: null });
     }
   };
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h3" gutterBottom>
-         Empleados
-      </Typography>
-        
-        <Box sx={{ display: 'flex', gap: 2 }}>
-          <Button
-            variant="outlined"
-            onClick={() => setImportDialogOpen(true)}
-          >
-            Importar Excel/CSV
-          </Button>
-          <Button
-            variant="contained"
-            color="primary"
-            size="large"
-            startIcon={<AddIcon />}
-            onClick={() => navigate('/employees/create')}
-          >
-            Crear Empleado
-          </Button>
-        </Box>
-        
-      </Box>
+    <PageContainer>
+      {/* Page header */}
+      <PageHeader
+        title="Gestión de Empleados"
+        actions={[
+          {
+            label: 'Importar Excel/CSV',
+            variant: 'outlined',
+            onClick: () => setImportDialogOpen(true),
+          },
+          {
+            label: 'Crear Empleado',
+            icon: <AddIcon />,
+            variant: 'contained',
+            onClick: () => navigate('/employees/create'),
+          },
+        ]}
+      />
 
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell><Typography variant="h5">Nombre</Typography></TableCell>
-              <TableCell><Typography variant="h5">Categoría</Typography></TableCell>
-              <TableCell><Typography variant="h5">Responsable(s)</Typography></TableCell>
-              <TableCell><Typography variant="h5">Carrera</Typography></TableCell>
-              <TableCell><Typography variant="h5">Área</Typography></TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {paginatedEmployees.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={5} align="center">
-                  <Typography variant="body2" color="text.secondary">
-                    No hay empleados disponibles
-                  </Typography>
-                </TableCell>
-              </TableRow>
-            ) : (
-              paginatedEmployees.map((employee) => {
-                return (
-                  <TableRow 
-                    key={employee.id} 
-                    hover 
-                    onClick={() => navigate(`/employees/${employee.id}`)}
-                    sx={{ cursor: 'pointer' }}
-                  >
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Avatar src={`https://i.pravatar.cc/150?u=${employee.id}`}>{employee.name[0]}</Avatar>
-                        <Typography variant="body1">{employee.name} {employee.surname}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getCategoryName(employee.field_categoria)}
-                        color="primary"
-                        size="medium"
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Typography variant="body1" component="div">{getManagerNames(employee.field_responsables)}</Typography>
-                    </TableCell>
-                    <TableCell><Typography variant="body1">{employee.field_tipo_carrera || '-'}</Typography></TableCell>
-                    <TableCell><Typography variant="body1">{employee.field_area || '-'}</Typography></TableCell>
-                  </TableRow>
-                );
-              })
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+      {/* Search form */}
+      <SearchEmployeesForm
+        criteria={criteria}
+        onCriteriaChange={updateCriteria}
+        onReset={resetCriteria}
+        onSearch={triggerSearch}
+        startDate={startDate}
+        endDate={endDate}
+        onDateRangeChange={setDateRange}
+      />
 
-      {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 3, gap: 0.5 }}>
-          {currentPage > 1 && (
-            <>
-              <Button
-                onClick={() => setCurrentPage(1)}
-                sx={{ minWidth: '40px', height: '40px', color: 'primary.main' }}
-              >
-                {'<<'}
-              </Button>
-              <Button
-                onClick={() => setCurrentPage(currentPage - 1)}
-                sx={{ minWidth: '40px', height: '40px', color: 'primary.main' }}
-              >
-                {'<'}
-              </Button>
-            </>
-          )}
+      {/* Results count */}
+      <ResultsCount
+        currentPage={currentPage}
+        itemsPerPage={EMPLOYEES_PER_PAGE}
+        totalItems={results.length}
+      />
 
-          {currentPage > 3 && (
-            <Box sx={{ minWidth: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main' }}>
-              ...
-            </Box>
-          )}
+      {/* Data table */}
+      <EmployeeTable
+        rows={paginatedResults}
+        allRows={results}
+        isLoading={isLoading}
+        currentPage={currentPage}
+        totalPages={totalPages}
+        onPageChange={setCurrentPage}
+      />
 
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(page => {
-              if (totalPages <= 5) return true;
-              return page >= currentPage - 2 && page <= currentPage + 2;
-            })
-            .map(page => (
-              <Button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                sx={{
-                  minWidth: '40px',
-                  height: '40px',
-                  bgcolor: page === currentPage ? 'primary.main' : 'transparent',
-                  color: page === currentPage ? '#fff' : '#000',
-                  '&:hover': {
-                    bgcolor: page === currentPage ? 'primary.dark' : 'rgba(0, 0, 0, 0.04)'
-                  }
-                }}
-              >
-                {page}
-              </Button>
-            ))}
+      {/* Import dialog */}
+      <EmployeeImportDialog
+        open={importDialogOpen}
+        onClose={() => setImportDialogOpen(false)}
+        createEmployee={createEmployee}
+        updateEmployee={updateEmployee}
+        existingEmployees={results.map((r) => r.employee)}
+        onImportComplete={({ success, errors }) => {
+          reloadEmployees?.();
+          setSnackbar({
+            open: true,
+            message:
+              errors.length > 0
+                ? `${success} importado(s), ${errors.length} error(es)`
+                : `${success} empleado(s) importado(s) correctamente`,
+            severity: errors.length > 0 ? 'warning' : 'success',
+          });
+        }}
+      />
 
-          {currentPage < totalPages - 2 && (
-            <Box sx={{ minWidth: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'primary.main' }}>
-              ...
-            </Box>
-          )}
-
-          {currentPage < totalPages && (
-            <>
-              <Button
-                onClick={() => setCurrentPage(currentPage + 1)}
-                sx={{ minWidth: '40px', height: '40px', color: 'primary.main' }}
-              >
-                {'>'}
-              </Button>
-              <Button
-                onClick={() => setCurrentPage(totalPages)}
-                sx={{ minWidth: '40px', height: '40px', color: 'primary.main' }}
-              >
-                {'>>'}
-              </Button>
-            </>
-          )}
-        </Box>
-      )}
-
-      {/* Dialog de confirmación para eliminar */}
+      {/* Delete confirmation dialog */}
       <Dialog
         open={deleteDialog.open}
         onClose={handleDeleteCancel}
-        maxWidth="sm"
-        fullWidth
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
       >
-        <DialogTitle>
-          <Typography variant="h4">Confirmar eliminación</Typography>
-        </DialogTitle>
+        <DialogTitle id="delete-dialog-title">Confirmar eliminación</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            <Typography variant="body1">
-              ¿Estás seguro de que deseas eliminar al empleado{' '}
-              <strong>
-                {deleteDialog.employee?.name} {deleteDialog.employee?.surname}
-              </strong>
-              ?
-              <br />
-              <br />
-              Esta acción no se puede deshacer.
-            </Typography>
+          <DialogContentText id="delete-dialog-description">
+            ¿Estás seguro de que deseas eliminar al empleado{' '}
+            <strong>
+              {deleteDialog.employee?.name} {deleteDialog.employee?.surname}
+            </strong>
+            ? Esta acción no se puede deshacer.
           </DialogContentText>
         </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={handleDeleteCancel}
-            variant="outlined"
-          >
+        <DialogActions>
+          <Button onClick={handleDeleteCancel} variant="outlined">
             Cancelar
           </Button>
-          <Button
-            onClick={handleDeleteConfirm}
-            variant="contained"
-            color="error"
-          >
+          <Button onClick={handleDeleteConfirm} variant="contained" color="error">
             Eliminar
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* Success / error snackbar */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        sx={{
-          position: 'fixed',
-          top: '50% !important',
-          left: '50% !important',
-          right: 'auto !important',
-          bottom: 'auto !important',
-          transform: 'translate(-50%, -50%) !important',
-          zIndex: 9999
-        }}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+        <Alert
           severity={snackbar.severity}
-          variant="filled"
-          sx={{ 
-            minWidth: '500px',
-            maxWidth: '700px',
-            padding: '20px 32px',
-            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
-            '& .MuiAlert-message': {
-              typography: 'subtitle1'
-            }
-          }}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+          sx={{ width: '100%' }}
         >
           {snackbar.message}
         </Alert>
       </Snackbar>
-
-      <EmployeeImportDialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        onImportComplete={(results) => {
-          setSnackbar({
-            open: true,
-            message: `Importación completada: ${results.success} filas procesadas exitosamente. ${results.errors.length > 0 ? `Errores: ${results.errors.length}` : ''}`,
-            severity: results.errors.length > 0 ? (results.success > 0 ? 'warning' : 'error') : 'success',
-          });
-        }}
-        createEmployee={createEmployee}
-        updateEmployee={updateEmployee}
-        existingEmployees={employees}
-      />
-    </Container>
+    </PageContainer>
   );
 };

@@ -2,6 +2,7 @@
 // IMPORTS
 // ============================================================
 // Componentes de Material-UI para la interfaz
+import { useState } from 'react'
 import {
   AppBar,
   Toolbar,
@@ -11,35 +12,27 @@ import {
   MenuItem,
   Avatar,
   IconButton,
+  Drawer,
+  List,
+  ListItem,
+  ListItemButton,
+  ListItemText,
+  Typography,
 } from '@mui/material'
 import {
   Notifications as NotificationsIcon,
   KeyboardArrowDown,
+  Menu as MenuIcon,
 } from '@mui/icons-material'
 import { useNavigate } from 'react-router-dom'
-// Hook personalizado con la lógica del navbar
 import { useNavbar } from '../hooks/useNavbar'
-// Logo de la aplicación
 import logoImg from '@/shared/assets/images/logo.png'
+import { useAuth } from '@/features/auth/AuthContext'
 
-// ============================================================
-// TYPES
-// ============================================================
-// Props del componente Navbar
 interface NavbarProps {
-  activePage?: string // Página actualmente activa
+  activePage?: string
 }
 
-// ============================================================
-// CONSTANTS
-// ============================================================
-// Items del menú desplegable de Empleados (solo para admin/responsable staffing)
-const employeesMenuItems = [
-  { label: 'Crear Usuarios', value: 'employees-create' },
-  { label: 'Filtrar Usuarios', value: 'employees-filter' },
-]
-
-// Items del menú desplegable de Area
 const areaMenuItems = [
   { label: 'Informes', value: 'informes' },
   { label: 'Piramide', value: 'piramide' },
@@ -48,36 +41,56 @@ const areaMenuItems = [
   { label: 'Taxonomías', value: 'taxonomias' },
 ]
 
-// ============================================================
-// COMPONENT
-// ============================================================
 export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
   const navigate = useNavigate()
-  // TODO: Obtener rol del usuario desde el contexto de autenticación
-  // Por ahora usamos un valor mock para demostración
-  const userRole = 'administrador' // Valores posibles: 'administrador', 'responsable staffing', 'empleado'
-  
-  // Verificar si el usuario tiene permisos para gestionar empleados
+  const { user, logout } = useAuth()
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const userRole = 'administrador'
   const canManageEmployees = ['administrador', 'responsable staffing'].includes(userRole.toLowerCase())
   
-  // Hook con lógica de navegación y estado del menú
   const {
     anchorEl,
-    employeesAnchorEl,
     isAreaMenuOpen,
-    isEmployeesMenuOpen,
     handleAreaMenuOpen,
     handleAreaMenuClose,
-    handleEmployeesMenuOpen,
-    handleEmployeesMenuClose,
     handleNavClick,
     handleAreaItemClick,
-    handleEmployeesItemClick,
     isActiveTab,
   } = useNavbar({ 
     activePage, 
     areaItems: areaMenuItems,
   })
+
+  const [profileAnchorEl, setProfileAnchorEl] = useState<null | HTMLElement>(null);
+
+  const handleProfileMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setProfileAnchorEl(event.currentTarget);
+  };
+
+  const handleProfileMenuClose = () => {
+    setProfileAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    handleProfileMenuClose();
+    logout();
+  };
+
+  const handleDrawerToggle = () => {
+    setMobileOpen((prevState) => !prevState)
+  }
+
+  const navItems = [
+    { label: 'Dashboard', value: 'dashboard' },
+    { label: 'Empleados', value: 'employees' },
+    { label: 'Proyectos', value: 'projects' },
+    { label: 'Clientes', value: 'clients' },
+  ]
+
+  const onNavClickMobile = (val: string) => {
+    handleNavClick(val)
+    setMobileOpen(false)
+  }
 
   return (
     <AppBar
@@ -97,287 +110,78 @@ export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
           px: { xs: 2, sm: 3 },
         }}
       >
-        {/* ============================================================ */}
-        {/* LOGO */}
-        {/* ============================================================ */}
-        <Box sx={{ display: 'flex', alignItems: 'center', mr: 3 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <IconButton
+            color="inherit"
+            aria-label="open drawer"
+            edge="start"
+            onClick={handleDrawerToggle}
+            sx={{ mr: 2, display: { md: 'none' } }}
+          >
+            <MenuIcon />
+          </IconButton>
           <Box
             component="img"
             src={logoImg}
             alt="Stafflink Logo"
-            sx={{ height: '40px' }}
+            sx={{ height: '40px', mr: 3 }}
           />
         </Box>
 
-        {/* ============================================================ */}
-        {/* NAVIGATION ITEMS */}
-        {/* ============================================================ */}
+        {/* Desktop Navigation */}
         <Box
           sx={{
-            display: 'flex',
+            display: { xs: 'none', md: 'flex' },
             flexGrow: 1,
             gap: 0.5,
-            justifyContent: 'right',
+            justifyContent: 'flex-end',
           }}
         >
-          {/* Dashboard */}
-          <Button
-            onClick={() => handleNavClick('dashboard')}
-            sx={(theme) => ({
-              color: '#18222b',
-              ...(theme.typography as any).navLink,
-              fontSize: '1.1rem',
-              px: 2,
-              py: 1.5,
-              position: 'relative',
-              borderRadius: 0,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                backgroundColor: '#1976d2',
-                transform: isActiveTab('dashboard') ? 'scaleX(1)' : 'scaleX(0)',
-                transition: 'transform 0.2s ease',
-              },
-            })}
-          >
-            Dashboard
-          </Button>
+          {navItems.map((item) => (
+            <Button
+              key={item.value}
+              onClick={() => handleNavClick(item.value)}
+              sx={(theme) => ({
+                color: '#0f172a',
+                fontSize: '1.05rem',
+                px: 2,
+                py: 1.5,
+                position: 'relative',
+                borderRadius: 0,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  backgroundColor: 'rgba(26, 86, 219, 0.08)',
+                },
+                '&::after': {
+                  content: '""',
+                  position: 'absolute',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  height: '3px',
+                  backgroundColor: '#1a56db',
+                  transform: isActiveTab(item.value) ? 'scaleX(1)' : 'scaleX(0)',
+                  transition: 'transform 0.2s ease',
+                },
+              })}
+            >
+              {item.label}
+            </Button>
+          ))}
 
-          {/* ============================================================ */}
-          {/* BOTÓN EMPLEADOS (con o sin dropdown según permisos) */}
-          {/* ============================================================ */}
-          {canManageEmployees ? (
-            <>
-              {/* Si tiene permisos: Botón con dropdown */}
-              <Button
-                onClick={handleEmployeesMenuOpen}
-                endIcon={<KeyboardArrowDown />}
-                sx={(theme) => ({
-                  color: '#18222b',
-                  ...(theme.typography as any).navLink,
-                  fontSize: '1.1rem',
-                  px: 2,
-                  py: 1.5,
-                  position: 'relative',
-                  borderRadius: 0,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                  },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    backgroundColor: '#1976d2',
-                    transform: employeesMenuItems.some(item => isActiveTab(item.value)) || isActiveTab('employees')
-                      ? 'scaleX(1)'
-                      : 'scaleX(0)',
-                    transition: 'transform 0.2s ease',
-                  },
-                })}
-              >
-                Empleados
-              </Button>
-
-              {/* Menú desplegable de Empleados */}
-              <Menu
-                anchorEl={employeesAnchorEl}
-                open={isEmployeesMenuOpen}
-                onClose={handleEmployeesMenuClose}
-                anchorOrigin={{
-                  vertical: 'bottom',
-                  horizontal: 'left',
-                }}
-                transformOrigin={{
-                  vertical: 'top',
-                  horizontal: 'left',
-                }}
-                sx={{
-                  '& .MuiPaper-root': {
-                    mt: 1,
-                    minWidth: 200,
-                    borderRadius: '12px',
-                    boxShadow: '0 20px 60px rgba(24, 34, 43, 0.08)',
-                  },
-                }}
-              >
-                {employeesMenuItems.map((item) => (
-                  <MenuItem
-                    key={item.value}
-                    onClick={() => handleEmployeesItemClick(item.value)}
-                    selected={isActiveTab(item.value)}
-                    sx={{
-                      py: 1.5,
-                      px: 2.5,
-                      '&.Mui-selected': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.12)',
-                      },
-                      '&:hover': {
-                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                      },
-                    }}
-                  >
-                    {item.label}
-                  </MenuItem>
-                ))}
-              </Menu>
-            </>
-          ) : (
-            <>
-              {/* Si NO tiene permisos: Botón simple sin dropdown */}
-              <Button
-                onClick={() => handleNavClick('employees')}
-                sx={(theme) => ({
-                  color: '#18222b',
-                  ...(theme.typography as any).navLink,
-                  fontSize: '1.1rem',
-                  px: 2,
-                  py: 1.5,
-                  position: 'relative',
-                  borderRadius: 0,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                  },
-                  '&::after': {
-                    content: '""',
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    backgroundColor: '#1976d2',
-                    transform: isActiveTab('employees') ? 'scaleX(1)' : 'scaleX(0)',
-                    transition: 'transform 0.2s ease',
-                  },
-                })}
-              >
-                Empleados
-              </Button>
-            </>
-          )}
-
-          {/* Proyectos */}
-          <Button
-            onClick={() => handleNavClick('projects')}
-            sx={(theme) => ({
-              color: '#18222b',
-              ...(theme.typography as any).navLink,
-              fontSize: '1.1rem',
-              px: 2,
-              py: 1.5,
-              position: 'relative',
-              borderRadius: 0,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                backgroundColor: '#1976d2',
-                transform: isActiveTab('projects') ? 'scaleX(1)' : 'scaleX(0)',
-                transition: 'transform 0.2s ease',
-              },
-            })}
-          >
-            Proyectos
-          </Button>
-
-          {/* Oportunidades */}
-          <Button
-            onClick={() => handleNavClick('opportunities')}
-            sx={(theme) => ({
-              color: '#18222b',
-              ...(theme.typography as any).navLink,
-              fontSize: '1.1rem',
-              px: 2,
-              py: 1.5,
-              position: 'relative',
-              borderRadius: 0,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                backgroundColor: '#1976d2',
-                transform: isActiveTab('opportunities') ? 'scaleX(1)' : 'scaleX(0)',
-                transition: 'transform 0.2s ease',
-              },
-            })}
-          >
-            Oportunidades
-          </Button>
-
-          {/* Clientes */}
-          <Button
-            onClick={() => handleNavClick('clients')}
-            sx={(theme) => ({
-              color: '#18222b',
-              ...(theme.typography as any).navLink,
-              fontSize: '1.1rem',
-              px: 2,
-              py: 1.5,
-              position: 'relative',
-              borderRadius: 0,
-              transition: 'all 0.2s ease',
-              '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
-              },
-              '&::after': {
-                content: '""',
-                position: 'absolute',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                height: '3px',
-                backgroundColor: '#1976d2',
-                transform: isActiveTab('clients') ? 'scaleX(1)' : 'scaleX(0)',
-                transition: 'transform 0.2s ease',
-              },
-            })}
-          >
-            Clientes
-          </Button>
-
-          {/* ============================================================ */}
-          {/* BOTÓN AREA CON DROPDOWN */}
-          {/* ============================================================ */}
           <Button
             onClick={handleAreaMenuOpen}
             endIcon={<KeyboardArrowDown />}
             sx={(theme) => ({
-              color: '#18222b',
-              ...(theme.typography as any).navLink,
-              fontSize: '1.1rem',
+              color: '#0f172a',
+              fontSize: '1.05rem',
               px: 2,
               py: 1.5,
               position: 'relative',
               borderRadius: 0,
               transition: 'all 0.2s ease',
               '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                backgroundColor: 'rgba(26, 86, 219, 0.08)',
               },
               '&::after': {
                 content: '""',
@@ -386,10 +190,8 @@ export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
                 left: 0,
                 right: 0,
                 height: '3px',
-                backgroundColor: '#1976d2',
-                transform: areaMenuItems.some(item => isActiveTab(item.value))
-                  ? 'scaleX(1)'
-                  : 'scaleX(0)',
+                backgroundColor: '#1a56db',
+                transform: areaMenuItems.some(item => isActiveTab(item.value)) ? 'scaleX(1)' : 'scaleX(0)',
                 transition: 'transform 0.2s ease',
               },
             })}
@@ -397,25 +199,17 @@ export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
             Area
           </Button>
 
-          {/* Menú desplegable de Area */}
           <Menu
             anchorEl={anchorEl}
             open={isAreaMenuOpen}
             onClose={handleAreaMenuClose}
-            anchorOrigin={{
-              vertical: 'bottom',
-              horizontal: 'left',
-            }}
-            transformOrigin={{
-              vertical: 'top',
-              horizontal: 'left',
-            }}
             sx={{
               '& .MuiPaper-root': {
                 mt: 1,
                 minWidth: 180,
-                borderRadius: '12px',
-                boxShadow: '0 20px 60px rgba(24, 34, 43, 0.08)',
+                borderRadius: '8px',
+                boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)',
+                border: '1px solid #e2e8f0',
               },
             }}
           >
@@ -428,10 +222,10 @@ export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
                   py: 1.5,
                   px: 2.5,
                   '&.Mui-selected': {
-                    backgroundColor: 'rgba(25, 118, 210, 0.12)',
+                    backgroundColor: 'rgba(26, 86, 219, 0.12)',
                   },
                   '&:hover': {
-                    backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                    backgroundColor: 'rgba(26, 86, 219, 0.08)',
                   },
                 }}
               >
@@ -440,19 +234,18 @@ export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
             ))}
           </Menu>
 
-          {/* Ayuda */}
           <Button
             onClick={() => handleNavClick('ayuda')}
             sx={(theme) => ({
-              color: '#18222b',
-              ...(theme.typography as any).navLink,
+              color: '#0f172a',
+              fontSize: '1.05rem',
               px: 2,
               py: 1.5,
               position: 'relative',
               borderRadius: 0,
               transition: 'all 0.2s ease',
               '&:hover': {
-                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                backgroundColor: 'rgba(26, 86, 219, 0.08)',
               },
               '&::after': {
                 content: '""',
@@ -461,7 +254,7 @@ export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
                 left: 0,
                 right: 0,
                 height: '3px',
-                backgroundColor: '#1976d2',
+                backgroundColor: '#1a56db',
                 transform: isActiveTab('ayuda') ? 'scaleX(1)' : 'scaleX(0)',
                 transition: 'transform 0.2s ease',
               },
@@ -471,48 +264,110 @@ export function Navbar({ activePage = 'dashboard' }: NavbarProps) {
           </Button>
         </Box>
 
-        {/* ============================================================ */}
-        {/* USER SECTION */}
-        {/* ============================================================ */}
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 3, ml: 2 }}>
-          {/* Botón de notificaciones */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1, sm: 3 }, ml: 2 }}>
           <Box
             sx={{
-              backgroundColor: '#cfcfcf',
-              borderRadius: '12px',
+              backgroundColor: '#e2e8f0',
+              borderRadius: '8px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              p: 1,
+              p: { xs: 0.5, sm: 1 },
             }}
           >
             <IconButton
               size="small"
               sx={{
-                p: 0.5,
                 '&:hover': {
-                  backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                  backgroundColor: 'rgba(26, 86, 219, 0.08)',
                 },
               }}
             >
-              <NotificationsIcon sx={{ color: '#4d5b66' }} />
+              <NotificationsIcon sx={{ color: '#475569', fontSize: { xs: '1.25rem', sm: '1.5rem' } }} />
             </IconButton>
           </Box>
           
-          {/* Avatar del usuario */}
-          <IconButton onClick={() => navigate('/employees/1')} sx={{ p: 0 }}>
+          <IconButton onClick={handleProfileMenuOpen} sx={{ p: 0 }}>
             <Avatar
               sx={{
-                width: 50,
-                height: 50,
-                backgroundColor: '#1976d2',
+                width: { xs: 40, sm: 50 },
+                height: { xs: 40, sm: 50 },
+                backgroundColor: '#1a56db',
               }}
             >
-              U
+              {user?.email?.charAt(0).toUpperCase() || 'U'}
             </Avatar>
           </IconButton>
+
+          <Menu
+            anchorEl={profileAnchorEl}
+            open={Boolean(profileAnchorEl)}
+            onClose={handleProfileMenuClose}
+            sx={{ mt: 1 }}
+          >
+            <MenuItem onClick={() => { handleProfileMenuClose(); navigate('/employees/user'); }}>
+              Mi Perfil
+            </MenuItem>
+            <MenuItem onClick={handleLogout}>
+              Cerrar Sesión
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
+
+      {/* Mobile Navigation Drawer */}
+      <Drawer
+        variant="temporary"
+        open={mobileOpen}
+        onClose={handleDrawerToggle}
+        ModalProps={{
+          keepMounted: true, 
+        }}
+        sx={{
+          display: { xs: 'block', md: 'none' },
+          '& .MuiDrawer-paper': { boxSizing: 'border-box', width: 280, backgroundColor: '#ffffff' },
+        }}
+      >
+        <Box sx={{ p: 2, display: 'flex', justifyContent: 'center', borderBottom: '1px solid #e2e8f0' }}>
+          <Box component="img" src={logoImg} alt="Stafflink Logo" sx={{ height: '40px' }} />
+        </Box>
+        <List>
+          {navItems.map((item) => (
+            <ListItem key={item.value} disablePadding>
+              <ListItemButton 
+                onClick={() => onNavClickMobile(item.value)}
+                selected={isActiveTab(item.value)}
+                sx={{
+                  '&.Mui-selected': {
+                    backgroundColor: 'rgba(26, 86, 219, 0.1)',
+                    borderLeft: '4px solid #1a56db',
+                  }
+                }}
+              >
+                <ListItemText primary={<Typography variant="body1" sx={{ fontWeight: isActiveTab(item.value) ? 600 : 400, color: '#0f172a' }}>{item.label}</Typography>} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+          <ListItem disablePadding>
+            <ListItemButton onClick={handleAreaMenuOpen} sx={{ width: '100%' }}>
+              <ListItemText primary={<Typography variant="body1" sx={{ color: '#0f172a' }}>Area</Typography>} />
+              <KeyboardArrowDown />
+            </ListItemButton>
+          </ListItem>
+          {isAreaMenuOpen && areaMenuItems.map((item) => (
+            <ListItem key={item.value} disablePadding sx={{ pl: 4 }}>
+              <ListItemButton onClick={() => { handleAreaItemClick(item.value); setMobileOpen(false); }} sx={{ width: '100%' }}>
+                <ListItemText primary={<Typography variant="body2" sx={{ fontSize: '0.9rem', color: '#475569' }}>{item.label}</Typography>} />
+              </ListItemButton>
+            </ListItem>
+          ))}
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => onNavClickMobile('ayuda')} sx={{ width: '100%' }}>
+              <ListItemText primary={<Typography variant="body1" sx={{ color: '#0f172a' }}>Ayuda</Typography>} />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      </Drawer>
     </AppBar>
   )
 }

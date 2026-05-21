@@ -7,6 +7,7 @@ export const SearchEmployeesPage = () => {
     criteria,
     updateCriteria,
     resetCriteria,
+    triggerSearch,
     isLoading,
     startDate,
     endDate,
@@ -15,13 +16,14 @@ export const SearchEmployeesPage = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Typography variant="h1" gutterBottom sx={{ fontWeight: 700, color: '#111827', fontSize: '2.5rem' }}>
+      <Typography variant="h1" gutterBottom>
         Buscar Empleados
       </Typography>
       <SearchEmployeesForm
         criteria={criteria}
         onCriteriaChange={updateCriteria}
         onReset={resetCriteria}
+        onSearch={triggerSearch}
         startDate={startDate}
         endDate={endDate}
         onDateRangeChange={setDateRange}

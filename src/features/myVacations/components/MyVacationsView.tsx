@@ -1,129 +1,205 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { VacationRequestModal } from './VacationRequestModal';
-import { VacationRequest } from '../../../types';
-
+import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import Box from '@mui/material/Box';
 import Chip from '@mui/material/Chip';
 import Link from '@mui/material/Link';
+import AddIcon from '@mui/icons-material/Add';
 import { Link as RouterLink } from 'react-router-dom';
 
+import { VacationRequestForm } from './VacationRequestForm';
+import { vacacionesService } from '../../../entities/vacaciones/api/vacaciones-service';
+import { DataTable, type Column } from '@/shared/ui/DataTable';
+import { PageContainer } from '@/shared/ui/PageContainer';
+import { tokens } from '@/app/providers/styles/theme';
+import type { Vacation } from '../../../entities/vacaciones/model/types';
+
+// ─── Sub-component ────────────────────────────────────────────────────────────
+
+interface VacationStatusChipProps {
+  status: Vacation['field_estado'];
+}
+
+function VacationStatusChip({ status }: VacationStatusChipProps) {
+  if (status === 'Approved') {
+    return (
+      <Chip
+        label="Aprobada"
+        size="small"
+        sx={{
+          bgcolor: tokens.status.approvedBg,
+          color: tokens.status.approvedText,
+          fontWeight: 600,
+          borderRadius: 2,
+        }}
+      />
+    );
+  }
+  if (status === 'Rejected') {
+    return (
+      <Chip
+        label="Rechazada"
+        size="small"
+        sx={{
+          bgcolor: tokens.status.rejectedBg,
+          color: tokens.status.rejectedText,
+          fontWeight: 600,
+          borderRadius: 2,
+        }}
+      />
+    );
+  }
+  return (
+    <Chip
+      label="Pendiente"
+      size="small"
+      sx={{
+        bgcolor: tokens.status.pendingBg,
+        color: tokens.status.pendingText,
+        fontWeight: 600,
+        borderRadius: 2,
+      }}
+    />
+  );
+}
+
+// ─── Column definitions ───────────────────────────────────────────────────────
+
+const COLUMNS: Column<Vacation>[] = [
+  {
+    key: 'start',
+    label: 'Fecha Inicio',
+    render: (row) => (
+      <Typography variant="body2" sx={{ color: tokens.text.body }}>
+        {row.field_rango_vacaciones.start}
+      </Typography>
+    ),
+  },
+  {
+    key: 'end',
+    label: 'Fecha Fin',
+    render: (row) => (
+      <Typography variant="body2" sx={{ color: tokens.text.body }}>
+        {row.field_rango_vacaciones.end}
+      </Typography>
+    ),
+  },
+  {
+    key: 'field_estado',
+    label: 'Estado',
+    render: (row) => <VacationStatusChip status={row.field_estado} />,
+  },
+];
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function MyVacationsView() {
-  const [requests, setRequests] = useState<VacationRequest[]>(() => {
-    const saved = localStorage.getItem('vacationRequests');
-    return saved ? JSON.parse(saved) : [];
-  });
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const currentUser = 'emp-1';
+  const [requests, setRequests] = useState<Vacation[]>([]);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const currentUser = 'user-1';
 
-  // Save to local storage whenever requests change
+  const loadRequests = async () => {
+    const all = await vacacionesService.getByEmployeeId(currentUser);
+    setRequests(all);
+  };
+
   useEffect(() => {
-    localStorage.setItem('vacationRequests', JSON.stringify(requests));
-  }, [requests]);
+    loadRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  // Sorting
-  const sortedRequests = useMemo(() => {
-    return [...requests].sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  }, [requests]);
+  const sortedRequests = useMemo(
+    () =>
+      [...requests].sort(
+        (a, b) =>
+          new Date(a.field_rango_vacaciones.start).getTime() -
+          new Date(b.field_rango_vacaciones.start).getTime(),
+      ),
+    [requests],
+  );
 
-  const handleSave = (request: VacationRequest) => {
-    setRequests(prev => [...prev, request]);
+  const handleSave = async (request: Omit<Vacation, 'id'>) => {
+    await vacacionesService.create(request);
+    loadRequests();
+    setIsFormOpen(false);
   };
 
   return (
-    <Box sx={{ maxWidth: '600px', mx: 'auto', mt: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h1" sx={{ fontWeight: 700, color: '#111827', fontSize: '2.5rem' }}>
-          Mis Vacaciones
-        </Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => setIsModalOpen(true)}
-          sx={{ 
-            bgcolor: '#6366f1', 
-            borderRadius: '24px', 
-            px: 4, 
-            py: 1, 
-            textTransform: 'none', 
-            fontWeight: 'bold', 
-            fontSize: '1rem',
-            boxShadow: 'none',
-            '&:hover': { bgcolor: '#4f46e5', boxShadow: 'none' } 
+    <PageContainer maxWidth="800px">
+      {/* Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
+        <Typography variant="h1">Mis Vacaciones</Typography>
+
+        {!isFormOpen && (
+          <Button
+            variant="contained"
+            startIcon={<AddIcon />}
+            onClick={() => setIsFormOpen(true)}
+            aria-label="Solicitar nuevas vacaciones"
+            sx={{
+              bgcolor: tokens.brand.main,
+              borderRadius: '24px',
+              px: { xs: 2, md: 4 },
+              py: 1.5,
+              fontWeight: 'bold',
+              fontSize: '1rem',
+              '&:hover': { bgcolor: tokens.brand.dark },
+            }}
+          >
+            Solicitar Vacaciones
+          </Button>
+        )}
+      </Box>
+
+      {/* Request form (inline) */}
+      {isFormOpen && (
+        <Box sx={{ mb: 3 }}>
+          <VacationRequestForm
+            existingRequests={requests}
+            onSave={handleSave}
+            onCancel={() => setIsFormOpen(false)}
+            employeeId={currentUser}
+          />
+        </Box>
+      )}
+
+      {/* Vacation list */}
+      <DataTable<Vacation>
+        columns={COLUMNS}
+        rows={sortedRequests}
+        ariaLabel="Tabla de mis solicitudes de vacaciones"
+        emptyMessage="No hay vacaciones solicitadas."
+      />
+
+      {/* Footer link */}
+      <Box
+        sx={{
+          mt: 2,
+          pt: 2,
+          borderTop: `1px solid ${tokens.border.default}`,
+          textAlign: 'center',
+        }}
+      >
+        <Link
+          component={RouterLink}
+          to="/projects"
+          sx={{
+            color: tokens.text.secondary,
+            textDecoration: 'none',
+            fontSize: '0.875rem',
+            '&:hover': { color: tokens.text.body },
           }}
         >
-          Request
-        </Button>
+          Ver mis proyectos
+        </Link>
       </Box>
-
-      <Box sx={{ border: '1px solid #e5e7eb', borderRadius: 3, overflow: 'hidden', bgcolor: 'white' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: 'minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr)', p: 3, pb: 2 }}>
-          <Typography sx={{ fontWeight: 'bold', color: '#1f2937' }}>Start Date</Typography>
-          <Typography sx={{ fontWeight: 'bold', color: '#1f2937' }}>End Date</Typography>
-          <Typography sx={{ fontWeight: 'bold', color: '#1f2937' }}>Status</Typography>
-        </Box>
-        
-        {sortedRequests.length === 0 ? (
-          <Box sx={{ p: 4, textAlign: 'center', color: '#6b7280' }}>
-            No vacation requests yet.
-          </Box>
-        ) : (
-          sortedRequests.map((req, index) => (
-            <Box key={req.id}>
-              <Box 
-                sx={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: 'minmax(120px, 1fr) minmax(120px, 1fr) minmax(120px, 1fr)', 
-                  p: 3, 
-                  py: 2.5,
-                  alignItems: 'center',
-                }}
-              >
-                <Typography sx={{ color: '#1f2937', fontSize: '1.1rem' }}>{req.startDate}</Typography>
-                <Typography sx={{ color: '#1f2937', fontSize: '1.1rem' }}>{req.endDate}</Typography>
-                <Box>
-                  {req.status === 'Approved' ? (
-                    <Typography sx={{ fontWeight: 500, color: '#111827', pl: 1, fontSize: '1.1rem' }}>
-                      Approved
-                    </Typography>
-                  ) : (
-                    <Chip 
-                      label={req.status} 
-                      sx={{ 
-                        bgcolor: '#f3f4f6', 
-                        color: '#1f2937', 
-                        fontWeight: 500,
-                        fontSize: '1rem',
-                        borderRadius: 4,
-                        px: 2,
-                        py: 2.5,
-                        height: 'auto'
-                      }} 
-                    />
-                  )}
-                </Box>
-              </Box>
-              {index < sortedRequests.length - 1 && (
-                <Box sx={{ height: '1px', bgcolor: '#e5e7eb', mx: 3 }} />
-              )}
-            </Box>
-          ))
-        )}
-
-        <Box sx={{ p: 3, textAlign: 'center', borderTop: '1px solid #e5e7eb', mt: 1 }}>
-          <Link component={RouterLink} to="/projects" sx={{ color: '#6b7280', textDecoration: 'none', '&:hover': { color: '#374151' } }}>
-            See my projects
-          </Link>
-        </Box>
-      </Box>
-
-      <VacationRequestModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        existingRequests={requests}
-        onSave={handleSave}
-        employeeId={currentUser}
-      />
-    </Box>
+    </PageContainer>
   );
 }

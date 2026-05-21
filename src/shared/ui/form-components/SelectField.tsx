@@ -21,6 +21,7 @@ interface SelectFieldProps {
   required?: boolean;
   name?: string;
   fullWidth?: boolean;
+  size?: 'small' | 'medium';
 }
 
 /**
@@ -35,11 +36,12 @@ export const SelectField = ({
   required = false,
   name,
   fullWidth = true,
+  size,
 }: SelectFieldProps) => {
   const displayLabel = required ? `${label} *` : label;
 
   return (
-    <FormControl fullWidth={fullWidth} error={!!error}>
+    <FormControl fullWidth={fullWidth} error={!!error} size={size}>
       <InputLabel>{displayLabel}</InputLabel>
       <Select
         value={value}

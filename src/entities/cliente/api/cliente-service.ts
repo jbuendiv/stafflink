@@ -1,46 +1,41 @@
-/**
- * Servicio para operaciones con Cliente
- */
-import type { Cliente, ClienteCreate, ClienteUpdate } from '../model/types';
-import { clientesMock } from '../model/cliente-mock';
+import { Client } from '@/types';
+import { MOCK_CLIENTS } from '@/data/mockData';
 
-class ClienteService {
-  private clientes: Cliente[] = [...clientesMock];
+const STORAGE_KEY = 'stafflink_clients';
 
-  async getAll(): Promise<Cliente[]> {
-    return Promise.resolve([...this.clientes]);
+export const clienteService = {
+  getAll: (): Client[] => {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) return JSON.parse(stored);
+    } catch(e) {}
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(MOCK_CLIENTS));
+    return MOCK_CLIENTS;
+  },
+  
+  getById: (id: string): Client | undefined => {
+    return clienteService.getAll().find(c => c.id === id);
+  },
+  
+  create: (client: Client): Client => {
+    const clients = clienteService.getAll();
+    const newClient = { ...client, id: `client-new-${Date.now()}` };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify([newClient, ...clients]));
+    return newClient;
+  },
+  
+  update: (id: string, updates: Partial<Client>): Client => {
+    const clients = clienteService.getAll();
+    const index = clients.findIndex(c => c.id === id);
+    if (index === -1) throw new Error('Cliente no encontrado');
+    
+    clients[index] = { ...clients[index], ...updates };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
+    return clients[index];
+  },
+
+  delete: (id: string): void => {
+    const clients = clienteService.getAll().filter(c => c.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(clients));
   }
-
-  async getById(id: string): Promise<Cliente | undefined> {
-    return Promise.resolve(this.clientes.find((c) => c.id === id));
-  }
-
-  async create(cliente: ClienteCreate): Promise<Cliente> {
-    const newCliente: Cliente = {
-      ...cliente,
-      id: `cliente-${Date.now()}`,
-    };
-    this.clientes.push(newCliente);
-    return Promise.resolve(newCliente);
-  }
-
-  async update(id: string, updates: ClienteUpdate): Promise<Cliente | undefined> {
-    const index = this.clientes.findIndex((c) => c.id === id);
-    if (index === -1) {
-      return Promise.resolve(undefined);
-    }
-    this.clientes[index] = { ...this.clientes[index], ...updates };
-    return Promise.resolve(this.clientes[index]);
-  }
-
-  async delete(id: string): Promise<boolean> {
-    const index = this.clientes.findIndex((c) => c.id === id);
-    if (index === -1) {
-      return Promise.resolve(false);
-    }
-    this.clientes.splice(index, 1);
-    return Promise.resolve(true);
-  }
-}
-
-export const clienteService = new ClienteService();
+};

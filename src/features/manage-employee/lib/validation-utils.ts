@@ -4,10 +4,10 @@
 
 /**
  * Valida el formato del número de empleado
- * Formato esperado: EMP-XXXX donde XXXX son dígitos
+ * Formato esperado: XXXXXX donde XXXXXX son 6 dígitos
  */
 export const validateEmployeeNumber = (value: string): boolean => {
-  const employeeNumberRegex = /^EMP-\d{4}$/;
+  const employeeNumberRegex = /^\d{6}$/;
   return employeeNumberRegex.test(value);
 };
 

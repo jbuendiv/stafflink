@@ -13,6 +13,8 @@ interface UseEmployeeSearchReturn {
   criteria: SearchCriteria;
   updateCriteria: (updates: Partial<SearchCriteria>) => void;
   resetCriteria: () => void;
+  triggerSearch: () => void;
+  reloadEmployees: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
   startDate: Date | null;
@@ -21,14 +23,18 @@ interface UseEmployeeSearchReturn {
 }
 
 const initialCriteria: SearchCriteria = {
-  skills: [],
-  idiomas: [],
-  categoria: [],
-  tipoCarrera: undefined,
-  area: undefined,
-  oficina: undefined,
-  minimumAvailability: 0,
   searchText: '',
+  department: '',
+  area: '',
+  oficina: '',
+  responsables: [],
+  proyectosOportunidades: [],
+  categoria: '',
+  tipoCarrera: '',
+  idiomas: [],
+  skills: [],
+  division: '',
+  disponibilidadMeses: [],
 };
 
 /**
@@ -36,38 +42,49 @@ const initialCriteria: SearchCriteria = {
  */
 export function useEmployeeSearch(): UseEmployeeSearchReturn {
   const [criteria, setCriteria] = useState<SearchCriteria>(initialCriteria);
+  const [appliedCriteria, setAppliedCriteria] = useState<SearchCriteria>(initialCriteria);
   const [startDate, setStartDate] = useState<Date | null>(new Date());
   const [endDate, setEndDate] = useState<Date | null>(() => {
     const date = new Date();
     date.setDate(date.getDate() + 30);
     return date;
   });
+  const [appliedStartDate, setAppliedStartDate] = useState<Date | null>(startDate);
+  const [appliedEndDate, setAppliedEndDate] = useState<Date | null>(endDate);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [isLoadingEmployees, setIsLoadingEmployees] = useState(false);
   const [employeesError, setEmployeesError] = useState<string | null>(null);
 
+  // Trigger search applies draft criteria to active filters
+  const triggerSearch = useCallback(() => {
+    setAppliedCriteria(criteria);
+    setAppliedStartDate(startDate);
+    setAppliedEndDate(endDate);
+  }, [criteria, startDate, endDate]);
+
+  const loadEmployees = useCallback(async () => {
+    setIsLoadingEmployees(true);
+    setEmployeesError(null);
+    try {
+      const data = await employeeService.getAll();
+      setEmployees(data);
+    } catch (err) {
+      setEmployeesError(err instanceof Error ? err.message : 'Error al cargar empleados');
+    } finally {
+      setIsLoadingEmployees(false);
+    }
+  }, []);
+
   // Cargar todos los empleados
   useEffect(() => {
-    const loadEmployees = async () => {
-      setIsLoadingEmployees(true);
-      setEmployeesError(null);
-      try {
-        const data = await employeeService.getAll();
-        setEmployees(data);
-      } catch (err) {
-        setEmployeesError(err instanceof Error ? err.message : 'Error al cargar empleados');
-      } finally {
-        setIsLoadingEmployees(false);
-      }
-    };
     loadEmployees();
-  }, []);
+  }, [loadEmployees]);
 
   // Aplicar filtros de perfil primero (sin disponibilidad)
   const employeesAfterProfileFilter = useMemo(() => {
-    const profileCriteria = { ...criteria, minimumAvailability: undefined };
+    const profileCriteria = { ...appliedCriteria, minimumAvailability: undefined };
     return filterEmployees(employees, profileCriteria);
-  }, [employees, criteria]);
+  }, [employees, appliedCriteria]);
 
   // Cargar disponibilidad solo para empleados que pasaron el filtro de perfil
   const employeeIds = useMemo(
@@ -92,8 +109,8 @@ export function useEmployeeSearch(): UseEmployeeSearchReturn {
   } = useAvailability({
     employeeIds,
     employeeOffices,
-    startDate,
-    endDate,
+    startDate: appliedStartDate,
+    endDate: appliedEndDate,
   });
 
   // Aplicar filtro de disponibilidad sobre resultados ya filtrados
@@ -118,12 +135,12 @@ export function useEmployeeSearch(): UseEmployeeSearchReturn {
     });
 
     // Si no hay filtro de disponibilidad mínima, retornar todos con availability
-    if (!criteria.minimumAvailability) {
+    if (!appliedCriteria.minimumAvailability) {
       return resultsWithAvailability;
     }
 
     // Filtrar por disponibilidad mínima
-    const minAvailability = criteria.minimumAvailability;
+    const minAvailability = appliedCriteria.minimumAvailability;
     return resultsWithAvailability.filter((result) => {
       if (!result.availability || result.availability.length === 0) return false;
 
@@ -134,7 +151,7 @@ export function useEmployeeSearch(): UseEmployeeSearchReturn {
 
       return totalHorasDisponibles >= minAvailability;
     });
-  }, [employeesAfterProfileFilter, criteria.minimumAvailability, availabilityMap]);
+  }, [employeesAfterProfileFilter, appliedCriteria.minimumAvailability, availabilityMap]);
 
   // Funciones para actualizar criterios de búsqueda
   const updateCriteria = useCallback((updates: Partial<SearchCriteria>) => {
@@ -144,10 +161,14 @@ export function useEmployeeSearch(): UseEmployeeSearchReturn {
   // Función para resetear criterios a valores iniciales
   const resetCriteria = useCallback(() => {
     setCriteria(initialCriteria);
-    setStartDate(new Date());
+    setAppliedCriteria(initialCriteria);
+    const initialStart = new Date();
+    setStartDate(initialStart);
+    setAppliedStartDate(initialStart);
     const newEndDate = new Date();
     newEndDate.setDate(newEndDate.getDate() + 30);
     setEndDate(newEndDate);
+    setAppliedEndDate(newEndDate);
   }, []);
 
   // Cargar datos base para cálculo de disponibilidad (mesHoras y asignaciones)
@@ -161,6 +182,8 @@ export function useEmployeeSearch(): UseEmployeeSearchReturn {
     criteria,
     updateCriteria,
     resetCriteria,
+    triggerSearch,
+    reloadEmployees: loadEmployees,
     isLoading: isLoadingEmployees || isLoadingAvailability,
     error: employeesError || availabilityError,
     startDate,

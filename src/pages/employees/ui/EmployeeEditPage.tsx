@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Container, Box, Alert, Snackbar, Typography, Breadcrumbs, Link } from '@mui/material';
+import { Container, Box, Alert, Snackbar, Typography, Breadcrumbs, Link, Paper } from '@mui/material';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { EmployeeForm, useEmployees } from '@/features/manage-employee';
 import type { UpdateEmployeeDTO } from '@/entities/employee/model/types';
@@ -15,7 +15,8 @@ export const EmployeeEditPage = () => {
   });
 
   const { employees, updateEmployee } = useEmployees();
-  const employee = employees.find(emp => emp.id === id);
+  const actualId = id === 'user' ? 'user-1' : id;
+  const employee = employees.find(emp => emp.id === actualId);
 
   const handleSave = (data: UpdateEmployeeDTO) => {
     if (!employee) return;
@@ -54,7 +55,7 @@ export const EmployeeEditPage = () => {
   }
 
   return (
-    <Container maxWidth="xl" sx={{ py: 4 }}>
+    <Container maxWidth="md" sx={{ py: 4 }}>
       <Breadcrumbs 
         separator={<NavigateNextIcon fontSize="small" />} 
         sx={{ mb: 3 }}
@@ -77,20 +78,18 @@ export const EmployeeEditPage = () => {
         </Typography>
       </Breadcrumbs>
 
-      <Typography
-        component="h1"
-        sx={{ fontSize: '2.5rem', fontWeight: 'bold', mb: 3 }}
-      >
-        Editar Empleado
-      </Typography>
-
-      <Box>
-        <EmployeeForm
-          employee={employee}
-          onSave={handleSave}
-          onCancel={handleCancel}
-        />
-      </Box>
+      <Paper sx={{ p: 4, borderRadius: 3, border: '1px solid #e5e7eb', boxShadow: 'none' }}>
+        <Typography variant="h4" sx={{ mb: 4, fontWeight: 'bold', textAlign: 'center' }}>
+          Editar Empleado
+        </Typography>
+        <Box sx={{ maxWidth: 600, mx: 'auto' }}>
+          <EmployeeForm
+            employee={employee}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
+        </Box>
+      </Paper>
 
       <Snackbar
         open={snackbar.open}

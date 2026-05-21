@@ -2,7 +2,7 @@ import { employees } from '@/entities/employee/model/employee-mock';
 import type { Employee, CreateEmployeeDTO, UpdateEmployeeDTO } from '@/entities/employee/model/types';
 
 // Clave para localStorage
-const STORAGE_KEY = 'stafflink_employees';
+const STORAGE_KEY = 'stafflink_employees_v2';
 
 /**
  * Guarda los empleados en localStorage
@@ -49,10 +49,12 @@ const generateId = (): string => {
  */
 const generateEmployeeNumber = (): string => {
   const maxNum = employeeData.reduce((max, emp) => {
-    const num = parseInt(emp.field_num_empleado.split('-')[1]);
-    return num > max ? num : max;
+    const parts = emp.field_num_empleado ? emp.field_num_empleado.split('-') : [];
+    const numPart = parts.length > 1 ? parts[1] : emp.field_num_empleado;
+    const num = parseInt(numPart || '0');
+    return !isNaN(num) && num > max ? num : max;
   }, 0);
-  return `EMP-${String(maxNum + 1).padStart(3, '0')}`;
+  return String(maxNum + 1).padStart(6, '0');
 };
 
 /**
@@ -81,7 +83,7 @@ export const employeeService = {
     const newEmployee: Employee = {
       ...data,
       id: generateId(),
-      field_num_empleado: generateEmployeeNumber()
+      field_num_empleado: data.field_num_empleado || generateEmployeeNumber()
     };
 
     employeeData.push(newEmployee);

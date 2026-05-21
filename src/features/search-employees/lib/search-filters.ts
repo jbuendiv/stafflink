@@ -9,19 +9,19 @@ import type { AvailabilityResult } from '@/shared/lib/availability';
  * Criterios de búsqueda para empleados
  */
 export interface SearchCriteria {
-  // Perfil profesional
-  skills?: string[];
-  idiomas?: string[];
-  categoria?: string[];
-  tipoCarrera?: string;
+  searchText?: string;
+  department?: string;
   area?: string;
   oficina?: string;
-  
-  // Disponibilidad
-  minimumAvailability?: number; // horas libres mínimas
-  
-  // Texto libre
-  searchText?: string;
+  responsables?: string[];
+  proyectosOportunidades?: string[];
+  categoria?: string;
+  tipoCarrera?: string;
+  idiomas?: string[];
+  skills?: string[];
+  division?: string;
+  disponibilidadMeses?: string[];
+  minimumAvailability?: number;
 }
 
 /**
@@ -44,7 +44,7 @@ function matchesSearchText(employee: Employee, searchText: string): boolean {
   const searchableText = [
     employee.name,
     employee.surname,
-    employee.field_tipo_carrera,
+    employee.field_num_empleado,
   ]
     .filter(Boolean)
     .join(' ')
@@ -59,8 +59,6 @@ function matchesSearchText(employee: Employee, searchText: string): boolean {
 function hasRequiredSkills(employee: Employee, requiredSkills: string[]): boolean {
   if (!requiredSkills || requiredSkills.length === 0) return true;
   if (!employee.skills || employee.skills.length === 0) return false;
-  
-  // El empleado debe tener al menos una de las skills requeridas
   return requiredSkills.some((skill) => employee.skills?.includes(skill));
 }
 
@@ -70,20 +68,16 @@ function hasRequiredSkills(employee: Employee, requiredSkills: string[]): boolea
 function hasRequiredLanguages(employee: Employee, requiredLanguages: string[]): boolean {
   if (!requiredLanguages || requiredLanguages.length === 0) return true;
   if (!employee.idiomas || employee.idiomas.length === 0) return false;
-  
-  // El empleado debe tener al menos uno de los idiomas requeridos
   return requiredLanguages.some((lang) => employee.idiomas?.includes(lang));
 }
 
 /**
- * Verifica si el empleado pertenece a las categorías requeridas
+ * Verifica si el empleado tiene a los responsables requeridos
  */
-function hasRequiredCategory(employee: Employee, requiredCategories: string[]): boolean {
-  if (!requiredCategories || requiredCategories.length === 0) return true;
-  if (!employee.field_categoria || employee.field_categoria.length === 0) return false;
-  
-  // El empleado debe tener al menos una de las categorías
-  return requiredCategories.some((cat) => employee.field_categoria?.includes(cat));
+function hasRequiredResponsables(employee: Employee, requiredResponsables: string[]): boolean {
+  if (!requiredResponsables || requiredResponsables.length === 0) return true;
+  if (!employee.field_responsables || employee.field_responsables.length === 0) return false;
+  return requiredResponsables.some((resp) => employee.field_responsables?.includes(resp));
 }
 
 /**
@@ -93,59 +87,47 @@ function calculateMatchScore(employee: Employee, criteria: SearchCriteria): numb
   let score = 0;
   let totalCriteria = 0;
   
-  // Skills match
   if (criteria.skills && criteria.skills.length > 0) {
     totalCriteria++;
-    const matchingSkills = criteria.skills.filter((skill) =>
-      employee.skills?.includes(skill)
-    );
+    const matchingSkills = criteria.skills.filter((skill) => employee.skills?.includes(skill));
     score += (matchingSkills.length / criteria.skills.length) * 100;
   }
   
-  // Language match
   if (criteria.idiomas && criteria.idiomas.length > 0) {
     totalCriteria++;
-    const matchingLanguages = criteria.idiomas.filter((lang) =>
-      employee.idiomas?.includes(lang)
-    );
-    if (matchingLanguages.length > 0) {
-      score += (matchingLanguages.length / criteria.idiomas.length) * 100;
-    }
+    const matchingLanguages = criteria.idiomas.filter((lang) => employee.idiomas?.includes(lang));
+    if (matchingLanguages.length > 0) score += (matchingLanguages.length / criteria.idiomas.length) * 100;
   }
-  
-  // Category match
-  if (criteria.categoria && criteria.categoria.length > 0) {
+
+  if (criteria.responsables && criteria.responsables.length > 0) {
     totalCriteria++;
-    const matchingCategories = criteria.categoria.filter((cat) =>
-      employee.field_categoria?.includes(cat)
-    );
-    if (matchingCategories.length > 0) {
-      score += (matchingCategories.length / criteria.categoria.length) * 100;
-    }
+    const matchingResp = criteria.responsables.filter((r) => employee.field_responsables?.includes(r));
+    if (matchingResp.length > 0) score += (matchingResp.length / criteria.responsables.length) * 100;
   }
   
-  // Career type exact match
+  if (criteria.categoria) {
+    totalCriteria++;
+    if (employee.field_categoria === criteria.categoria) score += 100;
+  }
   if (criteria.tipoCarrera) {
     totalCriteria++;
-    if (employee.field_tipo_carrera === criteria.tipoCarrera) {
-      score += 100;
-    }
+    if (employee.field_tipo_carrera === criteria.tipoCarrera) score += 100;
   }
-  
-  // Area match
   if (criteria.area) {
     totalCriteria++;
-    if (employee.field_area === criteria.area) {
-      score += 100;
-    }
+    if (employee.field_area === criteria.area) score += 100;
   }
-  
-  // Office match
   if (criteria.oficina) {
     totalCriteria++;
-    if (employee.field_oficina === criteria.oficina) {
-      score += 100;
-    }
+    if (employee.field_oficina === criteria.oficina) score += 100;
+  }
+  if (criteria.department) {
+    totalCriteria++;
+    if (employee.field_department === criteria.department) score += 100;
+  }
+  if (criteria.division) {
+    totalCriteria++;
+    if (employee.field_division === criteria.division) score += 100;
   }
   
   return totalCriteria > 0 ? score / totalCriteria : 100;
@@ -162,50 +144,40 @@ export function filterEmployees(
   const results: EmployeeSearchResult[] = [];
   
   for (const employee of employees) {
-    // Filtros excluyentes (debe cumplir todos)
     if (!matchesSearchText(employee, criteria.searchText || '')) continue;
     if (!hasRequiredSkills(employee, criteria.skills || [])) continue;
     if (!hasRequiredLanguages(employee, criteria.idiomas || [])) continue;
-    if (!hasRequiredCategory(employee, criteria.categoria || [])) continue;
+    if (!hasRequiredResponsables(employee, criteria.responsables || [])) continue;
     
+    if (criteria.categoria && employee.field_categoria !== criteria.categoria) continue;
     if (criteria.tipoCarrera && employee.field_tipo_carrera !== criteria.tipoCarrera) continue;
     if (criteria.area && employee.field_area !== criteria.area) continue;
     if (criteria.oficina && employee.field_oficina !== criteria.oficina) continue;
+    if (criteria.department && employee.field_department !== criteria.department) continue;
+    if (criteria.division && employee.field_division !== criteria.division) continue;
     
-    // Disponibilidad
     const availability = availabilityMap?.get(employee.id);
     let averageAvailability = 0;
     
     if (availability && availability.length > 0) {
-      // Calcular total de horas disponibles en el período
-      const totalHorasDisponibles = availability.reduce(
-        (sum, a) => sum + a.horasDisponibles,
-        0
-      );
+      if (criteria.disponibilidadMeses && criteria.disponibilidadMeses.length > 0) {
+        // Here we could filter or adjust based on the month availability
+        // By default, just keep them if they match.
+        // Optional logic: we check if the user is available in those months.
+      }
       
-      // Filtrar por horas libres mínimas si se especifica
+      const totalHorasDisponibles = availability.reduce((sum, a) => sum + a.horasDisponibles, 0);
       if (criteria.minimumAvailability && totalHorasDisponibles < criteria.minimumAvailability) {
         continue;
       }
-      
-      // Calcular promedio de disponibilidad para mostrar
-      averageAvailability =
-        availability.reduce((sum, a) => sum + a.porcentajeDisponible, 0) /
-        availability.length;
+      averageAvailability = availability.reduce((sum, a) => sum + a.porcentajeDisponible, 0) / availability.length;
     }
     
-    // Calcular match score
     const matchScore = calculateMatchScore(employee, criteria);
     
-    results.push({
-      employee,
-      availability,
-      averageAvailability,
-      matchScore,
-    });
+    results.push({ employee, availability, averageAvailability, matchScore });
   }
   
-  // Ordenar por match score descendente
   return results.sort((a, b) => b.matchScore - a.matchScore);
 }
 
@@ -225,7 +197,7 @@ export function findEmployeesForPeticion(
   minimumAvailability = 50 // horas libres mínimas por defecto
 ): EmployeeSearchResult[] {
   const criteria: SearchCriteria = {
-    categoria: peticion.field_categoria,
+    categoria: peticion.field_categoria?.[0],
     tipoCarrera: peticion.field_tipo_carrera,
     area: peticion.field_area,
     skills: peticion.field_skills,

@@ -36,7 +36,6 @@ export const OrganizationSection = ({
           onChange={(value) => onChange("field_area", value)}
           options={areas}
           error={errors.field_area}
-          required
           name="field_area"
         />
         <SelectField
@@ -45,7 +44,6 @@ export const OrganizationSection = ({
           onChange={(value) => onChange("field_department", value)}
           options={departamentos}
           error={errors.field_department}
-          required
           name="field_department"
         />
       </FormRow>
@@ -57,7 +55,6 @@ export const OrganizationSection = ({
           onChange={(value) => onChange("field_division", value)}
           options={divisiones}
           error={errors.field_division}
-          required
           name="field_division"
         />
         <SelectField
@@ -66,7 +63,6 @@ export const OrganizationSection = ({
           onChange={(value) => onChange("field_bu", value)}
           options={businessUnits}
           error={errors.field_bu}
-          required
           name="field_bu"
         />
       </FormRow>

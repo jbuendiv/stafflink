@@ -1,15 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword
-} from 'firebase/auth';
-import { auth } from '../../../services/firebase';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import Alert from '@mui/material/Alert';
+import { useAuth } from '../AuthContext';
 
 export function AuthView() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,20 +13,17 @@ export function AuthView() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const { login } = useAuth();
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     try {
-      if (isLogin) {
-        await signInWithEmailAndPassword(auth, email, password);
-      } else {
-        if (password !== confirmPassword) {
-          setError('Las contraseñas no coinciden');
-          return;
-        }
-        await createUserWithEmailAndPassword(auth, email, password);
+      if (!isLogin && password !== confirmPassword) {
+        setError('Las contraseñas no coinciden');
+        return;
       }
+      await login(email);
     } catch (err: any) {
       setError(err.message || 'Error en la autenticación');
     }
@@ -89,8 +82,8 @@ export function AuthView() {
             variant="contained" 
             sx={{ 
               mt: 2, 
-              bgcolor: '#6366f1', 
-              '&:hover': { bgcolor: '#4f46e5' },
+              bgcolor: '#1a56db', 
+              '&:hover': { bgcolor: '#1e3a8a' },
               textTransform: 'none',
               fontWeight: 'bold',
               borderRadius: 2,
@@ -109,7 +102,7 @@ export function AuthView() {
               setError(null);
               setConfirmPassword('');
             }}
-            sx={{ textTransform: 'none', color: '#6366f1', fontWeight: 600 }}
+            sx={{ textTransform: 'none', color: '#1a56db', fontWeight: 600 }}
           >
             {isLogin ? '¿No tienes cuenta? Regístrate' : '¿Ya tienes cuenta? Inicia sesión'}
           </Button>

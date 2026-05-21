@@ -119,3 +119,4 @@ export const asignacionMock: Asignacion[] = [
   { id: '59', field_empleado: 'user-18', field_proyecto_mkt: '6', field_mes_horas: '9', field_horas: 100, field_estado: 'Previsión' },
   { id: '60', field_empleado: 'user-19', field_proyecto_mkt: '6', field_mes_horas: '12', field_horas: 80, field_estado: 'Previsión' },
 ];
+

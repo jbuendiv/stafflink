@@ -132,7 +132,7 @@ export const MOCK_PROJECTS: Project[] = Array.from({ length: 42 }, (_, i) => {
     name: `Proyecto ODS ${2024 + (i % 3)} - ${i + 1}`,
     clientId: client.id,
     clientName: client.name,
-    codigoProyecto: `PRJ-${String(i + 1).padStart(4, '0')}`,
+    codigoProyecto: `INT-${String(Math.floor(Math.random() * 900000) + 100000)}-${String(Math.floor(Math.random() * 90000) + 10000)}`,
     managerId,
     projectManagerId,
     technicalLeadId,

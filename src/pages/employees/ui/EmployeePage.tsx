@@ -9,8 +9,7 @@ export const EmployeePage = () => {
     <Routes>
       <Route index element={<EmployeeList />} />
       <Route path="create" element={<EmployeeCreatePage />} />
-      <Route path="edit/:id" element={<EmployeeEditPage />} />
-      <Route path=":id" element={<EmployeeDetailPage />} />
+      <Route path=":id/*" element={<EmployeeDetailPage />} />
     </Routes>
   );
 };

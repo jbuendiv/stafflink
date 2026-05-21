@@ -1,69 +1,112 @@
-// ============================================================
-// IMPORTS
-// ============================================================
 import React, { useState, useMemo } from 'react';
-import { 
-  Box, 
-  Typography, 
-  Chip, 
-  Button, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions,
-  Snackbar,
-  Alert
-} from '@mui/material';
+import Box from '@mui/material/Box';
+import Typography from '@mui/material/Typography';
+import Chip from '@mui/material/Chip';
+import Button from '@mui/material/Button';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import Snackbar from '@mui/material/Snackbar';
+import Alert from '@mui/material/Alert';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CancelIcon from '@mui/icons-material/Cancel';
+
 import { useManageVacations } from '../hooks/useManageVacations';
-import { Pagination } from '../../../components/common/Pagination';
-import type { VacationRequest } from '../../../types';
+import { DataTable, type Column } from '@/shared/ui/DataTable';
+import { PageContainer } from '@/shared/ui/PageContainer';
+import { tokens } from '@/app/providers/styles/theme';
+import type { Vacation } from '@/entities/vacaciones/model/types';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const ITEMS_PER_PAGE = 8;
 
-const calculateBusinessDays = (startStr: string, endStr: string) => {
+const FILTER_LABELS: Record<string, string> = {
+  Pending: 'Pendientes',
+  Resolved: 'Resueltas',
+  All: 'Todas',
+};
+
+function calculateBusinessDays(startStr: string, endStr: string): number {
   if (!startStr || !endStr) return 0;
   let days = 0;
   const current = new Date(startStr);
   const end = new Date(endStr);
-  
-  // ensure time is zeroed if needed, but since it's date strings it should be fine
   while (current <= end) {
     const day = current.getDay();
-    if (day !== 0 && day !== 6) { // Not Sunday and Not Saturday
-      days++;
-    }
+    if (day !== 0 && day !== 6) days++;
     current.setDate(current.getDate() + 1);
   }
   return days;
-};
+}
 
-// ============================================================
-// COMPONENT
-// ============================================================
+// ─── Sub-components ───────────────────────────────────────────────────────────
+
+interface VacationStatusChipProps {
+  status: Vacation['field_estado'];
+}
+
+function VacationStatusChip({ status }: VacationStatusChipProps) {
+  const styles: Record<string, { bg: string; color: string; label: string }> = {
+    Pending: {
+      bg: tokens.status.pendingBg,
+      color: tokens.status.pendingText,
+      label: 'Pendiente',
+    },
+    Approved: {
+      bg: tokens.status.approvedBg,
+      color: tokens.status.approvedText,
+      label: 'Aprobada',
+    },
+    Rejected: {
+      bg: tokens.status.rejectedBg,
+      color: tokens.status.rejectedText,
+      label: 'Rechazada',
+    },
+  };
+  const { bg, color, label } = styles[status] ?? styles.Pending;
+  return (
+    <Chip
+      label={label}
+      size="small"
+      sx={{ bgcolor: bg, color, fontWeight: 600, borderRadius: 2 }}
+    />
+  );
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 export function ManageVacationsView() {
-  const { requests, updateRequestStatus } = useManageVacations();
-  
+  const { requests, updateRequestStatus, loading } = useManageVacations();
+
   const [currentPage, setCurrentPage] = useState(1);
   const [filterStatus, setFilterStatus] = useState<'All' | 'Pending' | 'Resolved'>('Pending');
-  
-  // Dialog state
+
+  // Dialog
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [selectedRequest, setSelectedRequest] = useState<VacationRequest | null>(null);
+  const [selectedRequest, setSelectedRequest] = useState<Vacation | null>(null);
   const [actionType, setActionType] = useState<'Approved' | 'Rejected' | null>(null);
 
-  // Snackbar state
+  // Snackbar
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState('');
 
-  const filteredRequests = useMemo(() => {
-    return requests.filter(req => {
-      if (filterStatus === 'Pending') return req.status === 'Pending';
-      if (filterStatus === 'Resolved') return req.status !== 'Pending';
-      return true;
-    }).sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
-  }, [requests, filterStatus]);
+  const filteredRequests = useMemo(
+    () =>
+      requests
+        .filter((req) => {
+          if (filterStatus === 'Pending') return req.field_estado === 'Pending';
+          if (filterStatus === 'Resolved') return req.field_estado !== 'Pending';
+          return true;
+        })
+        .sort(
+          (a, b) =>
+            new Date(a.field_rango_vacaciones.start).getTime() -
+            new Date(b.field_rango_vacaciones.start).getTime(),
+        ),
+    [requests, filterStatus],
+  );
 
   const totalPages = Math.ceil(filteredRequests.length / ITEMS_PER_PAGE);
   const paginatedRequests = useMemo(() => {
@@ -71,7 +114,7 @@ export function ManageVacationsView() {
     return filteredRequests.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredRequests, currentPage]);
 
-  const handleOpenDialog = (request: VacationRequest, action: 'Approved' | 'Rejected') => {
+  const handleOpenDialog = (request: Vacation, action: 'Approved' | 'Rejected') => {
     setSelectedRequest(request);
     setActionType(action);
     setDialogOpen(true);
@@ -80,11 +123,10 @@ export function ManageVacationsView() {
   const handleConfirmAction = () => {
     if (selectedRequest && actionType) {
       updateRequestStatus(selectedRequest.id, actionType);
-      
       setSnackbarMessage(
-        actionType === 'Approved' 
-          ? 'Vacaciones aprobadas. Se han recalculado las asignaciones.' 
-          : 'Vacaciones rechazadas.'
+        actionType === 'Approved'
+          ? 'Vacaciones aprobadas. Se han recalculado las asignaciones.'
+          : 'Vacaciones rechazadas.',
       );
       setSnackbarOpen(true);
     }
@@ -93,176 +135,216 @@ export function ManageVacationsView() {
     setActionType(null);
   };
 
-  return (
-    <Box sx={{ maxWidth: '1200px', mx: 'auto', mt: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h1" sx={{ fontWeight: 800, color: '#111827', fontSize: '2.5rem' }}>
-          Gestión de Vacaciones
+  // ── Column definitions ──────────────────────────────────────────────────────
+  const columns: Column<Vacation>[] = [
+    {
+      key: 'field_solicitante',
+      label: 'Empleado',
+      render: (row) => (
+        <Typography variant="body2" sx={{ fontWeight: 500, color: tokens.text.body }}>
+          {row.field_solicitante || 'Desconocido'}
         </Typography>
-      </Box>
-
-      {/* TABS / FILTERS */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 4 }}>
-        {['Pending', 'Resolved', 'All'].map((status) => (
-          <Button
-            key={status}
-            onClick={() => {
-              setFilterStatus(status as any);
-              setCurrentPage(1);
-            }}
-            sx={{
-              px: 3,
-              py: 1,
-              borderRadius: '24px',
-              textTransform: 'none',
-              fontWeight: 600,
-              bgcolor: filterStatus === status ? '#1f2937' : '#f3f4f6',
-              color: filterStatus === status ? 'white' : '#4b5563',
-              '&:hover': {
-                bgcolor: filterStatus === status ? '#111827' : '#e5e7eb'
-              }
-            }}
-          >
-            {status === 'Pending' ? 'Pendientes' : status === 'Resolved' ? 'Resueltas' : 'Todas'}
-          </Button>
-        ))}
-      </Box>
-
-      {/* TABLE */}
-      <Box sx={{ border: '1px solid #e5e7eb', borderRadius: 3, overflow: 'hidden', bgcolor: 'white' }}>
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1.5fr', p: 3, pb: 2, borderBottom: '1px solid #e5e7eb', bgcolor: '#f9fafb' }}>
-          <Typography sx={{ fontWeight: 'bold', color: '#374151' }}>Empleado ID</Typography>
-          <Typography sx={{ fontWeight: 'bold', color: '#374151' }}>Inicio</Typography>
-          <Typography sx={{ fontWeight: 'bold', color: '#374151' }}>Fin</Typography>
-          <Typography sx={{ fontWeight: 'bold', color: '#374151', textAlign: 'center' }}>Días</Typography>
-          <Typography sx={{ fontWeight: 'bold', color: '#374151' }}>Estado</Typography>
-          <Typography sx={{ fontWeight: 'bold', color: '#374151', textAlign: 'right' }}>Acciones</Typography>
-        </Box>
-
-        {paginatedRequests.length === 0 ? (
-          <Box sx={{ p: 8, textAlign: 'center', color: '#6b7280' }}>
-            <Typography variant="h6">No hay solicitudes para mostrar</Typography>
-            <Typography variant="body2" sx={{ mt: 1 }}>
-              {filterStatus === 'Pending' && '¡Genial! Tienes tu bandeja limpia.'}
-            </Typography>
+      ),
+    },
+    {
+      key: 'start',
+      label: 'Inicio',
+      render: (row) => (
+        <Typography variant="body2" color={tokens.text.secondary}>
+          {row.field_rango_vacaciones.start}
+        </Typography>
+      ),
+    },
+    {
+      key: 'end',
+      label: 'Fin',
+      render: (row) => (
+        <Typography variant="body2" color={tokens.text.secondary}>
+          {row.field_rango_vacaciones.end}
+        </Typography>
+      ),
+    },
+    {
+      key: 'days',
+      label: 'Días',
+      align: 'center',
+      render: (row) => (
+        <Typography variant="body2" sx={{ fontWeight: 700, color: tokens.text.body, textAlign: 'center' }}>
+          {calculateBusinessDays(
+            row.field_rango_vacaciones.start,
+            row.field_rango_vacaciones.end,
+          )}
+        </Typography>
+      ),
+    },
+    {
+      key: 'field_estado',
+      label: 'Estado',
+      render: (row) => <VacationStatusChip status={row.field_estado} />,
+    },
+    {
+      key: 'actions',
+      label: 'Acciones',
+      align: 'right',
+      render: (row) =>
+        row.field_estado === 'Pending' ? (
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
+            <Button
+              size="small"
+              startIcon={<CheckCircleIcon fontSize="small" />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDialog(row, 'Approved');
+              }}
+              aria-label={`Aprobar solicitud de ${row.field_solicitante}`}
+              sx={{
+                color: tokens.status.approvedText,
+                bgcolor: tokens.status.approvedBg,
+                border: `1px solid #bbf7d0`,
+                fontWeight: 500,
+                borderRadius: 1,
+                '&:hover': { bgcolor: '#dcfce7', borderColor: '#86efac' },
+              }}
+            >
+              Aprobar
+            </Button>
+            <Button
+              size="small"
+              startIcon={<CancelIcon fontSize="small" />}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleOpenDialog(row, 'Rejected');
+              }}
+              aria-label={`Rechazar solicitud de ${row.field_solicitante}`}
+              sx={{
+                color: tokens.status.rejectedText,
+                bgcolor: tokens.status.rejectedBg,
+                border: `1px solid #fecaca`,
+                fontWeight: 500,
+                borderRadius: 1,
+                '&:hover': { bgcolor: '#fee2e2', borderColor: '#fca5a5' },
+              }}
+            >
+              Rechazar
+            </Button>
           </Box>
         ) : (
-          paginatedRequests.map((req, index) => (
-            <Box key={req.id}>
-              <Box 
-                sx={{ 
-                  display: 'grid', 
-                  gridTemplateColumns: '1fr 1fr 1fr 1fr 1fr 1.5fr', 
-                  p: 3, 
-                  alignItems: 'center',
-                }}
-              >
-                <Typography sx={{ color: '#1f2937', fontWeight: 500 }}>{req.employeeId}</Typography>
-                <Typography sx={{ color: '#4b5563' }}>{req.startDate}</Typography>
-                <Typography sx={{ color: '#4b5563' }}>{req.endDate}</Typography>
-                <Typography sx={{ color: '#4b5563', textAlign: 'center', fontWeight: 'bold' }}>
-                  {calculateBusinessDays(req.startDate, req.endDate)}
-                </Typography>
-                <Box>
-                  <Chip 
-                    label={req.status === 'Pending' ? 'Pendiente' : req.status === 'Approved' ? 'Aprobada' : 'Rechazada'} 
-                    sx={{ 
-                      bgcolor: req.status === 'Pending' ? '#fef3c7' : req.status === 'Approved' ? '#dcfce7' : '#fee2e2', 
-                      color: req.status === 'Pending' ? '#b45309' : req.status === 'Approved' ? '#15803d' : '#b91c1c', 
-                      fontWeight: 600,
-                      borderRadius: 2,
-                    }} 
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1 }}>
-                  {req.status === 'Pending' ? (
-                    <>
-                      <Button
-                        size="small"
-                        startIcon={<CheckCircleIcon />}
-                        onClick={() => handleOpenDialog(req, 'Approved')}
-                        sx={{
-                          color: '#15803d',
-                          bgcolor: '#f0fdf4',
-                          border: '1px solid #bbf7d0',
-                          textTransform: 'none',
-                          fontWeight: 500,
-                          borderRadius: '8px',
-                          '&:hover': { bgcolor: '#dcfce7', borderColor: '#86efac' }
-                        }}
-                      >
-                        Aprobar
-                      </Button>
-                      <Button
-                        size="small"
-                        startIcon={<CancelIcon />}
-                        onClick={() => handleOpenDialog(req, 'Rejected')}
-                        sx={{
-                          color: '#b91c1c',
-                          bgcolor: '#fef2f2',
-                          border: '1px solid #fecaca',
-                          textTransform: 'none',
-                          fontWeight: 500,
-                          borderRadius: '8px',
-                          '&:hover': { bgcolor: '#fee2e2', borderColor: '#fca5a5' }
-                        }}
-                      >
-                        Rechazar
-                      </Button>
-                    </>
-                  ) : (
-                    <Typography sx={{ color: '#9ca3af', fontSize: '0.9rem', fontStyle: 'italic' }}>
-                      Sin acciones (Resuelta)
-                    </Typography>
-                  )}
-                </Box>
-              </Box>
-              {index < paginatedRequests.length - 1 && (
-                <Box sx={{ height: '1px', bgcolor: '#f3f4f6', mx: 3 }} />
-              )}
-            </Box>
-          ))
-        )}
+          <Typography
+            variant="body2"
+            sx={{ color: tokens.text.muted, fontStyle: 'italic', textAlign: 'right' }}
+          >
+            Resuelta
+          </Typography>
+        ),
+    },
+  ];
 
-        {totalPages > 1 && (
-          <Box sx={{ borderTop: '1px solid #e5e7eb', p: 2 }}>
-            <Pagination 
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={setCurrentPage}
-            />
-          </Box>
-        )}
+  // ── Render ──────────────────────────────────────────────────────────────────
+  return (
+    <PageContainer>
+      {/* Header */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          mb: 3,
+        }}
+      >
+        <Typography variant="h1">Gestión de Vacaciones</Typography>
       </Box>
 
-      {/* CONFIRMATION DIALOG */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
-        <DialogTitle sx={{ fontWeight: 'bold' }}>
+      {/* Filter tabs */}
+      <Box
+        component="nav"
+        aria-label="Filtrar solicitudes"
+        sx={{ display: 'flex', gap: 1.5, mb: 4, flexWrap: 'wrap' }}
+      >
+        {(['Pending', 'Resolved', 'All'] as const).map((status) => {
+          const active = filterStatus === status;
+          return (
+            <Button
+              key={status}
+              onClick={() => {
+                setFilterStatus(status);
+                setCurrentPage(1);
+              }}
+              aria-pressed={active}
+              sx={{
+                px: 3,
+                py: 1,
+                borderRadius: '24px',
+                bgcolor: active ? tokens.text.heading : tokens.chip.neutralBg,
+                color: active ? '#ffffff' : tokens.text.secondary,
+                '&:hover': {
+                  bgcolor: active ? tokens.text.body : tokens.border.default,
+                },
+              }}
+            >
+              {FILTER_LABELS[status]}
+            </Button>
+          );
+        })}
+      </Box>
+
+      {/* Table */}
+      {loading ? (
+        <Box sx={{ p: 4, textAlign: 'center' }}>
+          <Typography color="text.secondary">Cargando solicitudes…</Typography>
+        </Box>
+      ) : (
+        <DataTable<Vacation>
+          columns={columns}
+          rows={paginatedRequests}
+          ariaLabel="Tabla de solicitudes de vacaciones"
+          emptyMessage={
+            filterStatus === 'Pending'
+              ? '¡Genial! No hay solicitudes pendientes.'
+              : 'No hay solicitudes para mostrar.'
+          }
+          pagination={
+            totalPages > 1
+              ? { currentPage, totalPages, onPageChange: setCurrentPage }
+              : undefined
+          }
+        />
+      )}
+
+      {/* Confirmation dialog */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        aria-labelledby="confirm-dialog-title"
+      >
+        <DialogTitle id="confirm-dialog-title" sx={{ fontWeight: 700 }}>
           {actionType === 'Approved' ? '¿Aprobar vacaciones?' : '¿Rechazar vacaciones?'}
         </DialogTitle>
         <DialogContent>
           <Typography>
-            {actionType === 'Approved' 
+            {actionType === 'Approved'
               ? 'Esta acción aprobará la solicitud y disparará el proceso de recálculo de asignaciones. ¿Estás seguro?'
               : 'Esta acción rechazará la solicitud del empleado de forma definitiva.'}
           </Typography>
         </DialogContent>
-        <DialogActions sx={{ p: 2, pt: 0 }}>
-          <Button 
-            onClick={() => setDialogOpen(false)} 
-            sx={{ color: '#6b7280', textTransform: 'none', fontWeight: 500 }}
+        <DialogActions sx={{ p: 2, pt: 0, gap: 1 }}>
+          <Button
+            onClick={() => setDialogOpen(false)}
+            sx={{ color: tokens.text.secondary }}
           >
             Cancelar
           </Button>
-          <Button 
-            onClick={handleConfirmAction} 
+          <Button
+            onClick={handleConfirmAction}
             variant="contained"
-            sx={{ 
-              bgcolor: actionType === 'Approved' ? '#15803d' : '#b91c1c',
-              textTransform: 'none',
-              fontWeight: 'bold',
-              borderRadius: '8px',
-              '&:hover': { bgcolor: actionType === 'Approved' ? '#166534' : '#991b1b' }
+            sx={{
+              bgcolor:
+                actionType === 'Approved'
+                  ? tokens.status.approvedText
+                  : tokens.status.rejectedText,
+              '&:hover': {
+                bgcolor:
+                  actionType === 'Approved' ? '#166534' : '#991b1b',
+              },
             }}
           >
             Confirmar
@@ -270,22 +352,22 @@ export function ManageVacationsView() {
         </DialogActions>
       </Dialog>
 
-      {/* SUCCESS SNACKBAR */}
-      <Snackbar 
-        open={snackbarOpen} 
-        autoHideDuration={6000} 
+      {/* Success snackbar */}
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
-        <Alert 
-          onClose={() => setSnackbarOpen(false)} 
-          severity="success" 
+        <Alert
+          onClose={() => setSnackbarOpen(false)}
+          severity="success"
           variant="filled"
-          sx={{ width: '100%', borderRadius: '12px' }}
+          sx={{ width: '100%', borderRadius: 3 }}
         >
           {snackbarMessage}
         </Alert>
       </Snackbar>
-    </Box>
+    </PageContainer>
   );
 }

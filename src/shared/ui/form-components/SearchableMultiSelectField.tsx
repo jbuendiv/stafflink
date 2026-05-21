@@ -19,6 +19,7 @@ interface SearchableMultiSelectFieldProps<T = string> {
   placeholder?: string;
   error?: string;
   required?: boolean;
+  size?: 'small' | 'medium';
 }
 
 /**
@@ -35,6 +36,7 @@ export const SearchableMultiSelectField = <T extends string>({
   placeholder = "Buscar...",
   error,
   required,
+  size,
 }: SearchableMultiSelectFieldProps<T>) => {
   // Convertir los IDs seleccionados a objetos completos
   const selectedOptions = value
@@ -42,8 +44,9 @@ export const SearchableMultiSelectField = <T extends string>({
     .filter((opt): opt is { id: T; label: string } => opt !== undefined);
 
   return (
-    <FormControl fullWidth={fullWidth}>
+    <FormControl fullWidth={fullWidth} size={size}>
       <Autocomplete
+        size={size}
         multiple
         disableCloseOnSelect
         options={options}

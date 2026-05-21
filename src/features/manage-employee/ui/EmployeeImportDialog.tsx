@@ -79,7 +79,7 @@ export const EmployeeImportDialog: React.FC<EmployeeImportDialogProps> = ({
             continue;
           }
 
-          const existingEmp = existingEmployees.find((e) => e.email.toLowerCase() === email.toLowerCase());
+          const existingEmp = existingEmployees.find((e) => e.email?.toLowerCase() === email.toLowerCase());
 
           const dto: Partial<CreateEmployeeDTO> = {
             name,

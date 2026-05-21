@@ -33,11 +33,14 @@ export const useEmployeeForm = ({
 
   // Estado del formulario
   const [formData, setFormData] = useState<CreateEmployeeDTO>({
+    username: employee?.username || "",
+    password: "",
     name: employee?.name || "",
     surname: employee?.surname || "",
+    field_num_empleado: employee?.field_num_empleado || "",
     email: employee?.email || "",
     roles: employee?.roles || ["USUARIO_AUTENTICADO"],
-    field_estado_empleado: employee?.field_estado_empleado || "activo",
+    field_estado_empleado: employee?.field_estado_empleado || "Activo",
     field_oficina: employee?.field_oficina || "",
     field_area: employee?.field_area || "",
     field_department: employee?.field_department || "",
@@ -48,9 +51,46 @@ export const useEmployeeForm = ({
     skills: employee?.skills || [],
     idiomas: employee?.idiomas || [],
     field_responsables: employee?.field_responsables || [],
+    field_fecha_ultima_revision_ann: employee?.field_fecha_ultima_revision_ann || "",
+    field_cv: employee?.field_cv || "",
+    field_preferencias: employee?.field_preferencias || "",
+    field_incompatibilidades: employee?.field_incompatibilidades || "",
+    field_fecha_fin_asignacion_act: employee?.field_fecha_fin_asignacion_act || "",
+    user_picture: employee?.user_picture || "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (employee) {
+      setFormData({
+        username: employee.username || "",
+        password: "",
+        name: employee.name || "",
+        surname: employee.surname || "",
+        field_num_empleado: employee.field_num_empleado || "",
+        email: employee.email || "",
+        roles: employee.roles || ["USUARIO_AUTENTICADO"],
+        field_estado_empleado: employee.field_estado_empleado || "activo",
+        field_oficina: employee.field_oficina || "",
+        field_area: employee.field_area || "",
+        field_department: employee.field_department || "",
+        field_division: employee.field_division || "",
+        field_bu: employee.field_bu || "",
+        field_categoria: employee.field_categoria || "",
+        field_tipo_carrera: employee.field_tipo_carrera || "",
+        skills: employee.skills || [],
+        idiomas: employee.idiomas || [],
+        field_responsables: employee.field_responsables || [],
+        field_fecha_ultima_revision_ann: employee.field_fecha_ultima_revision_ann || "",
+        field_cv: employee.field_cv || "",
+        field_preferencias: employee.field_preferencias || "",
+        field_incompatibilidades: employee.field_incompatibilidades || "",
+        field_fecha_fin_asignacion_act: employee.field_fecha_fin_asignacion_act || "",
+        user_picture: employee.user_picture || "",
+      });
+    }
+  }, [employee]);
 
   // Lógica de negocio: ¿mostrar campo de responsable?
   const isAdminOrResponsable =
@@ -83,6 +123,11 @@ export const useEmployeeForm = ({
     Object.keys(EMPLOYEE_FIELD_VALIDATIONS).forEach((fieldName) => {
       const config = EMPLOYEE_FIELD_VALIDATIONS[fieldName];
       
+      // La contraseña no es obligatoria en modo edición
+      if (fieldName === "password" && isEditMode) {
+        return;
+      }
+
       // El responsable solo es obligatorio si no es ADMIN o RESPONSABLE
       if (fieldName === "field_responsable" && !shouldShowResponsable) {
         return;
@@ -100,6 +145,17 @@ export const useEmployeeForm = ({
       }
     });
 
+    // Validación de unicidad del número de empleado
+    if (formData.field_num_empleado) {
+      const allEmployees = employeeService.getAll();
+      const isDuplicateNum = allEmployees.some(
+        emp => emp.field_num_empleado === formData.field_num_empleado && emp.id !== employee?.id
+      );
+      if (isDuplicateNum) {
+        newErrors.field_num_empleado = "Este número de empleado ya está en uso";
+      }
+    }
+
     // Validaciones adicionales para email
     if (formData.email) {
       if (!validateEmailFormat(formData.email)) {
@@ -107,8 +163,8 @@ export const useEmployeeForm = ({
       } else {
         // Usar datos dinámicos del servicio (incluye empleados creados en tiempo de ejecución)
         const allEmployees = employeeService.getAll();
-        const existingEmails = allEmployees.map(emp => emp.email.toLowerCase());
-        const currentEmail = employee?.email.toLowerCase();
+        const existingEmails = allEmployees.map(emp => emp.email?.toLowerCase() ?? '');
+        const currentEmail = employee?.email?.toLowerCase();
         
         if (!validateEmailUniqueness(formData.email, existingEmails, currentEmail)) {
           newErrors.email = "Este email ya está en uso por otro empleado";
@@ -136,7 +192,13 @@ export const useEmployeeForm = ({
 
     if (!validateForm()) return;
 
-    onSave(formData as CreateEmployeeDTO | UpdateEmployeeDTO);
+    let payload = { ...formData };
+    // Si estamos editando y no se ha introducido nueva contraseña, no la mandamos
+    if (isEditMode && !payload.password) {
+      delete (payload as any).password;
+    }
+
+    onSave(payload as CreateEmployeeDTO | UpdateEmployeeDTO);
   };
 
   // Manejo de cambios en los campos

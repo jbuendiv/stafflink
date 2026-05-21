@@ -53,7 +53,6 @@ export const SkillsSection = ({
           options={responsableOptions}
           placeholder="Buscar responsable por nombre..."
           error={errors.field_responsables}
-          required
         />
       )}
       <SearchableMultiSelectField

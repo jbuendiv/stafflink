@@ -1,35 +1,166 @@
+/* ==========================================================================
+   CSS Custom Properties — Design Tokens
+   Change values here to retheme the entire app in one place.
+   ========================================================================== */
+
 :root {
-  --color-bg: #F7FAFC;
-  --color-bg-soft: rgba(255, 255, 255, 0.72);
-  --color-surface: rgba(255, 255, 255, 0.86);
-  --color-surface-strong: #fffdf8;
-  --color-text: #18222b;
-  --color-text-soft: #4d5b66;
-  --color-line: rgba(24, 34, 43, 0.12);
-  --color-accent: #0f766e;
-  --color-accent-soft: rgba(15, 118, 110, 0.12);
-  --shadow-soft: 0 20px 60px rgba(24, 34, 43, 0.08);
-  --radius-lg: 24px;
-  --radius-md: 16px;
-  --radius-sm: 12px;
-  --container: 1160px;
-  --font-sans: 'Sora', 'Segoe UI', sans-serif;
-  --font-body: 'Manrope', 'Segoe UI', sans-serif;
+  /* ── Brand ── */
+  --color-brand:         #1a56db;
+  --color-brand-dark:    #1e3a8a;
+  --color-brand-light:   #3f83f8;
+
+  /* ── Surfaces ── */
+  --color-bg:            #f9fafb;
+  --color-bg-legacy:     #f7fafc;          /* keep for backward compat */
+  --color-surface:       #ffffff;
+  --color-surface-soft:  rgba(255,255,255,0.86);
+  --color-surface-hover: rgba(26,86,219,0.04);
+
+  /* ── Text ── */
+  --color-text-heading:  #111827;
+  --color-text-body:     #374151;
+  --color-text-secondary:#6b7280;
+  --color-text-muted:    #9ca3af;
+
+  /* ── Borders ── */
+  --color-border:        #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  /* ── Status — Project ── */
+  --status-completed-bg:   #dcfce7;
+  --status-completed-text: #166534;
+  --status-inprogress-bg:  #dbeafe;
+  --status-inprogress-text:#1e40af;
+  --status-planned-bg:     #f3f4f6;
+  --status-planned-text:   #4b5563;
+
+  /* ── Status — Vacations / Requests ── */
+  --status-pending-bg:   #fef3c7;
+  --status-pending-text: #b45309;
+  --status-approved-bg:  #dcfce7;
+  --status-approved-text:#15803d;
+  --status-rejected-bg:  #fee2e2;
+  --status-rejected-text:#b91c1c;
+
+  /* ── Chips ── */
+  --chip-neutral-bg:   #f3f4f6;
+  --chip-neutral-text: #1f2937;
+  --chip-accent-bg:    #eef2ff;
+  --chip-accent-text:  #1a56db;
+  --chip-info-bg:      #dbeafe;
+  --chip-info-text:    #1e40af;
+
+  /* ── Table ── */
+  --table-header-bg:   #f8fafc;
+  --table-header-text: #475569;
+  --table-border:      #e2e8f0;
+  --table-row-hover:   rgba(26,86,219,0.04);
+  --table-focus:       #1a56db;
+
+  /* ── Surfaces (extended) ── */
+  --color-surface-overlay: rgba(0, 0, 0, 0.45);
+
+  /* ── Text (extended) ── */
+  --color-text-on-brand: #ffffff;
+  --color-link:          #1a56db;
+  --color-link-hover:    #1e3a8a;
+
+  /* ── Borders (extended) ── */
+  --color-border-focus:  #1a56db;
+
+  /* ── Status (extended) ── */
+  --status-warning-bg:    #fef9c3;
+  --status-warning-text:  #854d0e;
+  --status-error-bg:      #fee2e2;
+  --status-error-text:    #b91c1c;
+
+  /* ── Shadows ── */
+  --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-soft: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg:   0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-modal:0 20px 25px -5px rgb(0 0 0 / 0.15), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+  --shadow-card: 0 20px 60px rgba(24,34,43,0.08);
+
+  /* ── Radii ── */
+  --radius-xs:  4px;
+  --radius-sm:  8px;
+  --radius-md:  12px;
+  --radius-lg:  16px;
+  --radius-xl:  24px;
+  --radius-pill:999px;
+
+  /* ── Spacing (layout) ── */
+  --page-max-width: 1200px;
+  --page-padding:   32px;
+  --page-padding-sm:16px;
+  --section-gap:    2rem;
+  --card-padding:   1.5rem;
+
+  /* ── Typography ── */
+  --font-sans: 'Inter', 'Sora', 'Segoe UI', sans-serif;
+  --font-body: 'Inter', 'Manrope', 'Segoe UI', sans-serif;
+
+  /* ── Font size scale ── */
+  --font-size-xs:   0.75rem;
+  --font-size-sm:   0.8125rem;
+  --font-size-base: 0.875rem;
+  --font-size-md:   1rem;
+  --font-size-lg:   1.125rem;
+  --font-size-xl:   1.25rem;
+  --font-size-2xl:  1.5rem;
+  --font-size-3xl:  1.875rem;
+
+  /* ── Font weight ── */
+  --font-weight-normal:   400;
+  --font-weight-medium:   500;
+  --font-weight-semibold: 600;
+  --font-weight-bold:     700;
+
+  /* ── Line height ── */
+  --line-height-tight:   1.25;
+  --line-height-normal:  1.5;
+  --line-height-relaxed: 1.75;
+
+  /* ── Animation ── */
+  --duration-fast:   100ms;
+  --duration-base:   200ms;
+  --duration-slow:   300ms;
+  --easing:          cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-enter:    cubic-bezier(0, 0, 0.2, 1);
+  --easing-exit:     cubic-bezier(0.4, 0, 1, 1);
+  --transition-base: var(--duration-base) var(--easing);
+
+  /* ── Legacy aliases (keep for existing CSS that uses old names) ── */
+  --color-bg-soft:      rgba(255,255,255,0.72);
+  --color-text:         var(--color-text-body);
+  --color-text-soft:    var(--color-text-secondary);
+  --color-line:         rgba(24,34,43,0.12);
+  --color-accent:       #0f766e;
+  --color-accent-soft:  rgba(15,118,110,0.12);
+  --container:          var(--page-max-width);
 }
 
-* {
+/* ==========================================================================
+   Reset & Base
+   ========================================================================== */
+
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
 html {
   font-size: 16px;
+  scroll-behavior: smooth;
 }
 
 body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  color: var(--color-text);
+  color: var(--color-text-body);
   font-family: var(--font-body);
   background: var(--color-bg);
   text-rendering: optimizeLegibility;
@@ -37,6 +168,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Inherit font in form elements */
 button,
 input,
 select,
@@ -44,19 +176,45 @@ textarea {
   font: inherit;
 }
 
+/* Remove default link colour inheritance issue */
 a {
   color: inherit;
 }
 
+/* Images are block by default */
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* Remove list styles when list role is removed */
+ul[role='list'],
+ol[role='list'] {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Focus-visible outline for keyboard users */
+:focus-visible {
+  outline: 2px solid var(--color-brand);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   App Shell
+   ========================================================================== */
+
 #root {
   min-height: 100vh;
-  background-color: #F7FAFC;
+  background-color: var(--color-bg);
 }
 
 .app-shell {
   width: min(100% - 32px, var(--container));
   margin: 0 auto;
-  padding: 32px 0 48px;
+  padding: var(--page-padding) 0 48px;
 }
 
 .app-shell__header {
@@ -67,10 +225,10 @@ a {
   padding: 18px 22px;
   margin-bottom: 28px;
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-xl);
   background: var(--color-bg-soft);
   backdrop-filter: blur(18px);
-  box-shadow: var(--shadow-soft);
+  box-shadow: var(--shadow-card);
 }
 
 .app-shell__brand {
@@ -100,7 +258,7 @@ a {
 
 .app-shell__status {
   padding: 10px 14px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
   color: var(--color-accent);
   font-size: 0.875rem;
@@ -113,20 +271,24 @@ a {
   gap: 20px;
 }
 
+/* ==========================================================================
+   Panels / Cards
+   ========================================================================== */
+
 .panel {
   padding: 28px;
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-soft);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface-soft);
+  box-shadow: var(--shadow-card);
 }
 
 .hero-panel {
   display: grid;
   gap: 18px;
   background:
-    linear-gradient(135deg, rgba(15, 118, 110, 0.08), transparent 42%),
-    linear-gradient(180deg, var(--color-surface-strong), var(--color-surface));
+    linear-gradient(135deg, rgba(15,118,110,0.08), transparent 42%),
+    linear-gradient(180deg, #fffdf8, var(--color-surface-soft));
 }
 
 .hero-panel__title {
@@ -145,6 +307,10 @@ a {
   line-height: 1.65;
 }
 
+/* ==========================================================================
+   Pill list / Stack grid
+   ========================================================================== */
+
 .pill-list,
 .stack-grid {
   display: grid;
@@ -158,8 +324,8 @@ a {
 .pill {
   padding: 14px 16px;
   border: 1px solid var(--color-line);
-  border-radius: var(--radius-sm);
-  background: rgba(255, 255, 255, 0.62);
+  border-radius: var(--radius-md);
+  background: rgba(255,255,255,0.62);
   font-weight: 700;
 }
 
@@ -181,12 +347,33 @@ a {
 .stack-card__tag {
   width: fit-content;
   padding: 8px 12px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: var(--color-accent-soft);
   color: var(--color-accent);
   font-size: 0.8125rem;
   font-weight: 700;
 }
+
+/* ==========================================================================
+   Utility classes
+   ========================================================================== */
+
+/** Visually hidden but accessible to screen readers */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
 
 @media (max-width: 720px) {
   .app-shell {
@@ -203,5 +390,3 @@ a {
     padding: 22px;
   }
 }
-
-

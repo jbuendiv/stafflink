@@ -1,13 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { MonthlyCalendar, Office } from '../../../types';
-import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle';
-import DialogContent from '@mui/material/DialogContent';
-import DialogActions from '@mui/material/DialogActions';
+
 import Button from '@mui/material/Button';
-import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close';
-import Typography from '@mui/material/Typography';
 import TextField from '@mui/material/TextField';
 import Select from '@mui/material/Select';
 import MenuItem from '@mui/material/MenuItem';
@@ -18,8 +12,15 @@ import Box from '@mui/material/Box';
 import List from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
-import DeleteIcon from '@mui/icons-material/Delete';
+import IconButton from '@mui/material/IconButton';
+import Typography from '@mui/material/Typography';
 import Alert from '@mui/material/Alert';
+import DeleteIcon from '@mui/icons-material/Delete';
+
+import { BaseModal } from '@/shared/ui/BaseModal';
+import { tokens } from '@/app/providers/styles/theme';
+
+// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface CalendarModalProps {
   isOpen: boolean;
@@ -48,7 +49,19 @@ const MONTHS = [
   { value: 12, label: 'Diciembre' },
 ];
 
-export function CalendarModal({ isOpen, onClose, calendar, allOffices, existingCalendars, onSave, defaultOfficeId, defaultMonth, defaultYear }: CalendarModalProps) {
+// ─── Component ───────────────────────────────────────────────────────────────
+
+export function CalendarModal({
+  isOpen,
+  onClose,
+  calendar,
+  allOffices,
+  existingCalendars,
+  onSave,
+  defaultOfficeId,
+  defaultMonth,
+  defaultYear,
+}: CalendarModalProps) {
   const [officeId, setOfficeId] = useState('');
   const [month, setMonth] = useState<number>(new Date().getMonth() + 1);
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -57,6 +70,7 @@ export function CalendarModal({ isOpen, onClose, calendar, allOffices, existingC
   const [newHoliday, setNewHoliday] = useState('');
   const [error, setError] = useState('');
 
+  // ── Seed form ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (calendar) {
       setOfficeId(calendar.officeId);
@@ -74,11 +88,10 @@ export function CalendarModal({ isOpen, onClose, calendar, allOffices, existingC
     setError('');
   }, [calendar, isOpen, defaultOfficeId, defaultMonth, defaultYear]);
 
+  // ── Holidays helpers ──────────────────────────────────────────────────────
   const handleAddHoliday = () => {
-    if (!newHoliday) return;
-    if (holidays.includes(newHoliday)) return;
-    
-    // Check if holiday matches current month and year
+    if (!newHoliday || holidays.includes(newHoliday)) return;
+
     const holidayDate = new Date(newHoliday);
     if (holidayDate.getMonth() + 1 !== month || holidayDate.getFullYear() !== year) {
       setError('El festivo debe pertenecer al mes y año seleccionados.');
@@ -91,26 +104,31 @@ export function CalendarModal({ isOpen, onClose, calendar, allOffices, existingC
   };
 
   const handleRemoveHoliday = (dateToRemove: string) => {
-    setHolidays(holidays.filter(h => h !== dateToRemove));
+    setHolidays(holidays.filter((h) => h !== dateToRemove));
   };
 
-  const handleSave = () => {
-    if (!officeId || !month || !year || workingHours === '') return;
+  // ── Validation & save ─────────────────────────────────────────────────────
+  const isValid = Boolean(officeId && month && year && workingHours !== '');
 
-    const selectedOffice = allOffices.find(o => o.id === officeId);
+  const handleSave = () => {
+    if (!isValid) return;
+
+    const selectedOffice = allOffices.find((o) => o.id === officeId);
     if (!selectedOffice) return;
 
-    // Validation: Check if a calendar for this office, month, and year already exists (and it's not the one we are editing)
     const isDuplicate = existingCalendars.some(
-      c => c.officeId === officeId && c.month === month && c.year === year && c.id !== calendar?.id
+      (c) =>
+        c.officeId === officeId &&
+        c.month === month &&
+        c.year === year &&
+        c.id !== calendar?.id,
     );
-
     if (isDuplicate) {
       setError('Ya existe un calendario para esta oficina, mes y año.');
       return;
     }
 
-    const savedCalendar: MonthlyCalendar = {
+    onSave({
       id: calendar ? calendar.id : `cal-new-${Date.now()}`,
       officeId: selectedOffice.id,
       officeName: selectedOffice.name,
@@ -118,139 +136,182 @@ export function CalendarModal({ isOpen, onClose, calendar, allOffices, existingC
       year: Number(year),
       workingHours: Number(workingHours),
       holidays,
-    };
-    
-    onSave(savedCalendar);
+    });
     onClose();
   };
 
+  // ── Footer ────────────────────────────────────────────────────────────────
+  const actions = (
+    <>
+      <Button
+        variant="outlined"
+        color="inherit"
+        onClick={onClose}
+        sx={{ textTransform: 'none' }}
+      >
+        Cancelar
+      </Button>
+      <Button
+        variant="contained"
+        onClick={handleSave}
+        disabled={!isValid}
+        sx={{
+          textTransform: 'none',
+          boxShadow: 'none',
+          bgcolor: tokens.brand.main,
+          '&:hover': { bgcolor: tokens.brand.dark },
+        }}
+      >
+        Guardar Configuración
+      </Button>
+    </>
+  );
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <Dialog open={isOpen} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 1 }}>
-        <Typography variant="h6" component="span" sx={{ fontWeight: 'bold' }}>
-          {calendar ? 'Editar Calendario Laboral' : 'Nuevo Calendario Laboral'}
-        </Typography>
-        <IconButton aria-label="Cerrar modal" onClick={onClose} size="small">
-          <CloseIcon />
-        </IconButton>
-      </DialogTitle>
-      
-      <DialogContent dividers>
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, pt: 1 }}>
-          {error && <Alert severity="error">{error}</Alert>}
+    <BaseModal
+      open={isOpen}
+      onClose={onClose}
+      title={calendar ? 'Editar Calendario Laboral' : 'Nuevo Calendario Laboral'}
+      maxWidth="sm"
+      actions={actions}
+    >
+      <Box
+        component="form"
+        noValidate
+        aria-label={
+          calendar ? 'Formulario editar calendario' : 'Formulario nuevo calendario'
+        }
+        sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}
+      >
+        {error && (
+          <Alert severity="error" role="alert">
+            {error}
+          </Alert>
+        )}
 
-          <Autocomplete
-            size="small"
-            fullWidth
-            options={allOffices}
-            getOptionLabel={(option) => option.name}
-            value={allOffices.find(o => o.id === officeId) || null}
-            onChange={(event, newValue) => setOfficeId(newValue?.id || '')}
-            renderInput={(params) => (
-              <TextField {...params} label="Oficina" required placeholder="Buscar oficina..." />
-            )}
-            disabled={!!calendar} // Avoid changing office if we are coming from a specific context
-          />
+        <Autocomplete
+          size="small"
+          fullWidth
+          options={allOffices}
+          getOptionLabel={(o) => o.name}
+          value={allOffices.find((o) => o.id === officeId) ?? null}
+          onChange={(_, val) => setOfficeId(val?.id ?? '')}
+          disabled={!!calendar}
+          renderInput={(params) => (
+            <TextField {...params} label="Oficina" required placeholder="Buscar oficina…" />
+          )}
+        />
 
-          <Box sx={{ display: 'flex', gap: 2 }}>
-            <FormControl fullWidth size="small" required disabled={!!calendar}>
-              <InputLabel id="month-select-label">Mes</InputLabel>
-              <Select
-                labelId="month-select-label"
-                value={month}
-                label="Mes"
-                onChange={(e) => setMonth(Number(e.target.value))}
-              >
-                {MONTHS.map(m => (
-                  <MenuItem key={m.value} value={m.value}>{m.label}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Año"
-              type="number"
-              value={year}
-              onChange={(e) => setYear(Number(e.target.value))}
-              size="small"
-              required
-              fullWidth
-              disabled={!!calendar}
-            />
-          </Box>
+        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', sm: 'row' } }}>
+          <FormControl fullWidth size="small" required disabled={!!calendar}>
+            <InputLabel id="cal-modal-month-label">Mes</InputLabel>
+            <Select
+              labelId="cal-modal-month-label"
+              value={month}
+              label="Mes"
+              onChange={(e) => setMonth(Number(e.target.value))}
+            >
+              {MONTHS.map((m) => (
+                <MenuItem key={m.value} value={m.value}>
+                  {m.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <TextField
-            fullWidth
-            label="Horas Laborables del Mes"
+            label="Año"
             type="number"
-            value={workingHours}
-            onChange={(e) => setWorkingHours(e.target.value === '' ? '' : Number(e.target.value))}
-            required
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
             size="small"
-            slotProps={{ htmlInput: { min: 0 } }}
+            required
+            fullWidth
+            disabled={!!calendar}
           />
-
-          <Box sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 1, p: 2 }}>
-            <Typography variant="subtitle2" sx={{ mb: 2, fontWeight: 'bold' }}>
-              Días Festivos
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-              <TextField
-                label="Añadir Festivo"
-                type="date"
-                value={newHoliday}
-                onChange={(e) => setNewHoliday(e.target.value)}
-                size="small"
-                fullWidth
-                slotProps={{ inputLabel: { shrink: true } }}
-              />
-              <Button 
-                variant="outlined" 
-                onClick={handleAddHoliday}
-                disabled={!newHoliday}
-              >
-                Añadir
-              </Button>
-            </Box>
-            
-            {holidays.length > 0 ? (
-              <List dense sx={{ bgcolor: 'grey.50', borderRadius: 1 }}>
-                {holidays.map((date) => (
-                  <ListItem
-                    key={date}
-                    secondaryAction={
-                      <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveHoliday(date)} size="small" color="error">
-                        <DeleteIcon />
-                      </IconButton>
-                    }
-                  >
-                    <ListItemText primary={date} />
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography variant="body2" color="text.secondary">
-                No hay festivos definidos para este mes.
-              </Typography>
-            )}
-          </Box>
         </Box>
-      </DialogContent>
-      
-      <DialogActions sx={{ px: 3, py: 2, bgcolor: 'grey.50' }}>
-        <Button onClick={onClose} color="inherit" variant="outlined" sx={{ textTransform: 'none' }}>
-          Cancelar
-        </Button>
-        <Button 
-          onClick={handleSave} 
-          color="primary" 
-          variant="contained" 
-          sx={{ textTransform: 'none', boxShadow: 'none' }}
-          disabled={!officeId || !month || !year || workingHours === ''}
+
+        <TextField
+          fullWidth
+          label="Horas Laborables del Mes"
+          type="number"
+          value={workingHours}
+          onChange={(e) =>
+            setWorkingHours(e.target.value === '' ? '' : Number(e.target.value))
+          }
+          required
+          size="small"
+          slotProps={{ htmlInput: { min: 0 } }}
+        />
+
+        {/* ── Festivos ────────────────────────────────────────────────────── */}
+        <Box
+          sx={{
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1,
+            p: 2,
+          }}
         >
-          Guardar Configuración
-        </Button>
-      </DialogActions>
-    </Dialog>
+          <Typography
+            component="h3"
+            variant="subtitle2"
+            sx={{ mb: 2, fontWeight: 600 }}
+          >
+            Días Festivos
+          </Typography>
+
+          <Box
+            sx={{ display: 'flex', gap: 1, mb: 2, flexDirection: { xs: 'column', sm: 'row' } }}
+          >
+            <TextField
+              label="Añadir Festivo"
+              type="date"
+              value={newHoliday}
+              onChange={(e) => setNewHoliday(e.target.value)}
+              size="small"
+              fullWidth
+              slotProps={{ inputLabel: { shrink: true } }}
+            />
+            <Button
+              variant="outlined"
+              onClick={handleAddHoliday}
+              disabled={!newHoliday}
+              sx={{ whiteSpace: 'nowrap' }}
+            >
+              Añadir
+            </Button>
+          </Box>
+
+          {holidays.length > 0 ? (
+            <List dense sx={{ bgcolor: 'grey.50', borderRadius: 1 }} aria-label="Lista de festivos">
+              {holidays.map((date) => (
+                <ListItem
+                  key={date}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      aria-label={`Eliminar festivo ${date}`}
+                      onClick={() => handleRemoveHoliday(date)}
+                      size="small"
+                      color="error"
+                    >
+                      <DeleteIcon />
+                    </IconButton>
+                  }
+                >
+                  <ListItemText primary={date} />
+                </ListItem>
+              ))}
+            </List>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              No hay festivos definidos para este mes.
+            </Typography>
+          )}
+        </Box>
+      </Box>
+    </BaseModal>
   );
 }

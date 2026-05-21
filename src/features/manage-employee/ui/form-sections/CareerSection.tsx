@@ -4,7 +4,7 @@ import { categorias, tiposCarrera } from "@/shared/mock/catalogs";
 
 interface CareerSectionProps {
   categoria: string;
-  tipoCarrera: string;
+  tipoCarrera?: string;
   errors: Record<string, string>;
   onChange: (field: string, value: string) => void;
 }
@@ -14,7 +14,7 @@ interface CareerSectionProps {
  */
 export const CareerSection = ({
   categoria,
-  tipoCarrera,
+  tipoCarrera = "",
   errors,
   onChange,
 }: CareerSectionProps) => {
@@ -26,7 +26,6 @@ export const CareerSection = ({
         onChange={(value) => onChange("field_categoria", value)}
         options={categorias}
         error={errors.field_categoria}
-        required
         name="field_categoria"
       />
       <SelectField
@@ -35,7 +34,6 @@ export const CareerSection = ({
         onChange={(value) => onChange("field_tipo_carrera", value)}
         options={tiposCarrera}
         error={errors.field_tipo_carrera}
-        required
         name="field_tipo_carrera"
       />
     </FormRow>
